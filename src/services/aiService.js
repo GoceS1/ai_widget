@@ -61,7 +61,28 @@ Analyze the text and fix all spelling, grammar, and punctuation mistakes.
 - **This is critical: You MUST NOT rewrite sentences for style, clarity, or tone.**
 - Only make the minimum changes necessary to correct objective errors. If a sentence is grammatically correct but sounds awkward, you must leave it unchanged.
 - Do not alter the author's vocabulary or sentence structure unless it is grammatically incorrect.
-- Your output must ONLY be the corrected text. Do not include any notes, explanations, or conversational phrases.`
+- Your output must ONLY be the corrected text. Do not include any notes, explanations, or conversational phrases.`,
+
+  custom: `You are a versatile, context-aware AI assistant. Your entire purpose is to act upon a specific piece of selected text based on a custom instruction provided by the user.
+
+You will always be given two things:
+1. \`[SELECTED TEXT]\`: A block of text the user has highlighted on a webpage.
+2. \`[USER'S CUSTOM PROMPT]\`: A specific command or question from the user.
+
+Your primary directive is to apply the \`[USER'S CUSTOM PROMPT]\` directly to the \`[SELECTED TEXT]\`.
+
+**Your mode of operation depends on the user's prompt:**
+
+* **If the prompt is a command to EDIT, REWRITE, or TRANSFORM the text** (e.g., "Make this sound more confident," "Turn this into a rhyming poem," "Convert this to a bulleted list"):
+    * Your output MUST be **only** the newly transformed text.
+
+* **If the prompt is a QUESTION, a request for ANALYSIS, or a query ABOUT the text** (e.g., "Summarize the main points here," "What is the tone of this passage?", "Translate this to Spanish," "Explain this concept simply"):
+    * Your output MUST be a direct answer to the question, using the \`[SELECTED TEXT]\` as the primary source of truth.
+
+**Crucial Constraints:**
+* **Never ignore the \`[SELECTED TEXT]\`**. Your response must always be fundamentally linked to it.
+* Do not invent information that is not present in or cannot be inferred from the \`[SELECTED TEXT]\`, unless the user's prompt explicitly asks for creative expansion (e.g., "Expand on this idea").
+* **Your output must be direct and clean.** Do not include conversational filler like "Sure, here's the summary:" or "Based on the text you provided...". Directly provide the transformed text or the answer.`
 }
 
 // Function to process text with AI
@@ -71,8 +92,21 @@ export async function processTextWithAI(action, selectedText, customPrompt = nul
   }
   
   try {
-    const systemPrompt = SYSTEM_PROMPTS[action]
-    const userPrompt = customPrompt || selectedText
+    // Use custom system prompt if custom prompt is provided, otherwise use action-specific prompt
+    const systemPrompt = customPrompt ? SYSTEM_PROMPTS.custom : SYSTEM_PROMPTS[action]
+    
+    // If custom prompt is provided, format it properly
+    let userPrompt
+    if (customPrompt) {
+      userPrompt = `[USER'S CUSTOM PROMPT]: ${customPrompt}\n\n[SELECTED TEXT]: ${selectedText}`
+    } else {
+      userPrompt = selectedText
+    }
+
+    console.log('🤖 Sending to OpenAI:')
+    console.log('📋 System Prompt:', systemPrompt.substring(0, 100) + '...')
+    console.log('💬 User Prompt:', userPrompt)
+    console.log('🎯 Action:', action)
 
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -90,9 +124,12 @@ export async function processTextWithAI(action, selectedText, customPrompt = nul
       temperature: 0.7
     })
 
+    const aiResponse = response.choices[0].message.content.trim()
+    console.log('✅ AI Response:', aiResponse)
+
     return {
       success: true,
-      text: response.choices[0].message.content.trim()
+      text: aiResponse
     }
   } catch (error) {
     console.error('AI processing error:', error)

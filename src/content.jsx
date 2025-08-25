@@ -34,6 +34,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 let widgetContainer = null
 let widgetRoot = null
 let isShowingWidget = false // Flag to prevent immediate closing
+let currentSelection = null // Store the current text selection
+let highlightElement = null // Store the highlight element
 
 // Create widget container
 function createWidgetContainer() {
@@ -87,6 +89,15 @@ function showWidget(selectedText, rect) {
   isShowingWidget = true
   
   try {
+    // Store the current selection
+    const selection = window.getSelection()
+    if (selection.rangeCount > 0) {
+      currentSelection = selection.getRangeAt(0).cloneRange()
+      
+      // Create highlight element
+      createHighlight()
+    }
+    
     // Check if widget already exists
     let container = document.getElementById('ai-widget-container')
     
@@ -134,9 +145,61 @@ function showWidget(selectedText, rect) {
   }
 }
 
+// Create highlight element
+function createHighlight() {
+  if (!currentSelection) return
+  
+  // Remove existing highlight
+  removeHighlight()
+  
+  // Create highlight element
+  highlightElement = document.createElement('span')
+  highlightElement.style.cssText = `
+    background-color: rgba(59, 130, 246, 0.3) !important;
+    border-radius: 2px !important;
+    padding: 1px 2px !important;
+    position: relative !important;
+    z-index: 1 !important;
+  `
+  highlightElement.className = 'ai-widget-highlight'
+  
+  try {
+    // Clone the range and surround it with the highlight element
+    const range = currentSelection.cloneRange()
+    range.surroundContents(highlightElement)
+  } catch (error) {
+    console.log('Could not create highlight (text might be split across elements)')
+  }
+}
+
+// Remove highlight element
+function removeHighlight() {
+  if (highlightElement) {
+    try {
+      // Move the text back out of the highlight element
+      const parent = highlightElement.parentNode
+      if (parent) {
+        while (highlightElement.firstChild) {
+          parent.insertBefore(highlightElement.firstChild, highlightElement)
+        }
+        parent.removeChild(highlightElement)
+      }
+    } catch (error) {
+      console.log('Error removing highlight:', error)
+    }
+    highlightElement = null
+  }
+}
+
 // Make sure hideWidget function is properly defined
 function hideWidget() {
   console.log('🎯 hideWidget function called')
+  
+  // Remove highlight
+  removeHighlight()
+  
+  // Clear selection
+  currentSelection = null
   
   const container = document.getElementById('ai-widget-container')
   if (container) {

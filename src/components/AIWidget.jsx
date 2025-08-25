@@ -103,7 +103,7 @@ const AIWidget = ({ selectedText, onClose }) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
       
-      // Get the selected text from the webpage
+      // Use the selectedText from props (stored when widget opened)
       const textToProcess = selectedText || "No text selected"
       
       if (!textToProcess || textToProcess === "No text selected") {
@@ -118,6 +118,8 @@ const AIWidget = ({ selectedText, onClose }) => {
         console.log('No custom prompt entered')
         return
       }
+      
+      console.log('Processing custom prompt:', customPrompt, 'with text:', textToProcess)
       
       // Set loading state
       setIsProcessing(true)
