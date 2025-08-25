@@ -1,0 +1,5 @@
+description: Always include the project brief as context for every new chat.
+
+globs:
+
+- PROJECT_BRIEF.md
