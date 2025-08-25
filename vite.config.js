@@ -15,9 +15,7 @@ export default defineConfig({
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]',
-        format: 'iife',
-        inlineDynamicImports: true,
-        manualChunks: undefined
+        format: 'iife'
       }
     }
   }

@@ -99,7 +99,7 @@ const AIWidget = ({ selectedText, onClose }) => {
     onClose() // This should call hideWidget from content.jsx
   }
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = async (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
       
@@ -113,10 +113,36 @@ const AIWidget = ({ selectedText, onClose }) => {
       
       // Send custom prompt + selected text to AI
       const customPrompt = inputText.trim()
-      const fullPrompt = `${customPrompt}: "${textToProcess}"`
       
-      console.log('Will send to AI:', fullPrompt)
-      // TODO: Send to OpenAI API
+      if (!customPrompt) {
+        console.log('No custom prompt entered')
+        return
+      }
+      
+      // Set loading state
+      setIsProcessing(true)
+      setProcessingAction('custom')
+      
+      try {
+        // Process text with AI using custom prompt
+        const result = await processTextWithAI('improve', textToProcess, customPrompt)
+        
+        if (result.success) {
+          // Update textarea with AI response
+          setInputText(result.text)
+        } else {
+          // Handle error
+          console.error('AI processing failed:', result.error)
+          setInputText(`Error: ${result.error}`)
+        }
+      } catch (error) {
+        console.error('AI processing error:', error)
+        setInputText(`Error: ${error.message}`)
+      } finally {
+        // Clear loading state
+        setIsProcessing(false)
+        setProcessingAction(null)
+      }
     }
   }
 
