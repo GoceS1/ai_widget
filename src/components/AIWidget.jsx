@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { User, ChevronDown, Sparkles, Briefcase, Scissors, CheckCircle, Copy, Check, Loader2 } from 'lucide-react'
 import { processTextWithAI } from '../services/aiService.js'
 
-const AIWidget = ({ selectedText, onClose }) => {
+const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   // console.log(' AIWidget component rendering with text:', selectedText)
   const [inputText, setInputText] = useState('')
   const [persona, setPersona] = useState('default')
@@ -148,6 +148,16 @@ const AIWidget = ({ selectedText, onClose }) => {
     }
   }
 
+  // Theme-aware style generator
+  const isDark = theme === 'dark'
+  const textColor = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 1)'
+  const textColorSecondary = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.95)'
+  const textColorTertiary = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.7)'
+  const bgColor = isDark ? 'rgba(255, 255, 255, 0.01)' : 'transparent'
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.2)'
+  const borderColorHover = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.4)'
+  const bgColorHover = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.1)'
+
   const headerStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -161,9 +171,9 @@ const AIWidget = ({ selectedText, onClose }) => {
     gap: '8px',
     padding: '8px 16px',
     borderRadius: '9999px',
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    backgroundColor: bgColor,
     backdropFilter: 'blur(4px)',
-    border: '1px solid rgba(255, 255, 255, 0.4)',
+    border: `1px solid ${borderColor}`,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
@@ -176,10 +186,10 @@ const AIWidget = ({ selectedText, onClose }) => {
     width: '40px',
     height: '40px',
     borderRadius: '9999px',
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    backgroundColor: bgColor,
     backdropFilter: 'blur(4px)',
-    border: '1px solid rgba(255, 255, 255, 0.4)',
-    color: 'rgba(255, 255, 255, 0.8)',
+    border: `1px solid ${borderColor}`,
+    color: textColorSecondary,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
@@ -196,7 +206,7 @@ const AIWidget = ({ selectedText, onClose }) => {
     border: 'none',
     outline: 'none',
     resize: 'none',
-    color: 'rgba(255, 255, 255, 0.95)', // Figma: text-white/95
+    color: textColor, // Theme-aware text color
     fontSize: '18px', // Figma: text-lg
     lineHeight: '1.625', // Figma: leading-relaxed
     fontFamily: 'inherit'
@@ -204,14 +214,15 @@ const AIWidget = ({ selectedText, onClose }) => {
 
   const shortcutTextStyle = {
     fontSize: '12px',
-    color: 'rgba(255, 255, 255, 0.4)', // Figma: text-white/40
+    color: textColorTertiary, // Theme-aware text color
     marginTop: '8px'
   }
 
   const buttonContainerStyle = {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '8px'
+    gap: '8px',
+    marginTop: '0'
   }
 
   const shortcutButtonStyle = {
@@ -222,7 +233,7 @@ const AIWidget = ({ selectedText, onClose }) => {
     borderRadius: '8px', // Figma: rounded-lg
     background: 'transparent',
     border: 'none',
-    color: 'rgba(255, 255, 255, 0.8)', // Figma: text-white/80
+    color: textColorSecondary, // Theme-aware text color
     cursor: 'pointer',
     transition: 'all 0.2s ease' // Figma: duration-200
   }
@@ -234,10 +245,10 @@ const AIWidget = ({ selectedText, onClose }) => {
     width: '40px',
     height: '40px',
     borderRadius: '9999px',
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    backgroundColor: bgColor,
     backdropFilter: 'blur(4px)',
-    border: '1px solid rgba(255, 255, 255, 0.4)',
-    color: 'rgba(255, 255, 255, 0.8)',
+    border: `1px solid ${borderColor}`,
+    color: textColorSecondary,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
@@ -261,11 +272,11 @@ const AIWidget = ({ selectedText, onClose }) => {
       {/* Header with persona selector and action buttons */}
       <div style={headerStyle}>
         <div style={personaSelectorStyle}>
-          <User size={16} />
-          <span style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.95)' }}>
+          <User size={16} style={{ color: textColor }} />
+          <span style={{ fontSize: '14px', color: textColor }}>
             {personas[0].name}
           </span>
-          <ChevronDown size={16} />
+          <ChevronDown size={16} style={{ color: textColor }} />
         </div>
         
         {/* Action Buttons */}
@@ -274,18 +285,18 @@ const AIWidget = ({ selectedText, onClose }) => {
             onClick={handleCopy}
             style={{
               ...actionButtonStyle,
-              color: 'rgba(255, 255, 255, 0.8)' // Always white, no green
+              color: textColorSecondary // Theme-aware color
             }}
             onMouseEnter={(e) => {
               if (copyState === 'copy') {
-                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.6)'
+                e.target.style.backgroundColor = bgColorHover
+                e.target.style.borderColor = borderColorHover
               }
             }}
             onMouseLeave={(e) => {
               if (copyState === 'copy') {
-                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.01)'
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+                e.target.style.backgroundColor = bgColor
+                e.target.style.borderColor = borderColor
               }
             }}
           >
@@ -296,12 +307,12 @@ const AIWidget = ({ selectedText, onClose }) => {
             onClick={handleClose}
             style={actionButtonStyle}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.6)'
+              e.target.style.backgroundColor = bgColorHover
+              e.target.style.borderColor = borderColorHover
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.01)'
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)'
+              e.target.style.backgroundColor = bgColor
+              e.target.style.borderColor = borderColor
             }}
           >
             ✕
@@ -342,14 +353,14 @@ const AIWidget = ({ selectedText, onClose }) => {
               }}
               onMouseEnter={(e) => {
                 if (!isProcessing) {
-                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
-                  e.target.style.color = 'rgba(255, 255, 255, 0.95)'
+                  e.target.style.backgroundColor = bgColorHover
+                  e.target.style.color = textColor
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isProcessing) {
                   e.target.style.backgroundColor = 'transparent'
-                  e.target.style.color = 'rgba(255, 255, 255, 0.8)'
+                  e.target.style.color = textColorSecondary
                 }
               }}
             >

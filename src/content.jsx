@@ -6,6 +6,87 @@ import './styles/globals.css'
 
 console.log('🎯 AI Widget content script loaded!')
 
+// Function to detect website theme (dark/light)
+function detectWebsiteTheme() {
+  try {
+    // Get computed styles of body and html
+    const bodyStyle = window.getComputedStyle(document.body)
+    const htmlStyle = window.getComputedStyle(document.documentElement)
+    
+    // Get background colors
+    const bodyBg = bodyStyle.backgroundColor
+    const htmlBg = htmlStyle.backgroundColor
+    
+    // Convert to RGB values
+    const getRGBValues = (color) => {
+      const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/)
+      if (match) {
+        return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])]
+      }
+      return null
+    }
+    
+    const bodyRGB = getRGBValues(bodyBg)
+    const htmlRGB = getRGBValues(htmlBg)
+    
+    // Calculate brightness (using luminance formula)
+    const calculateBrightness = (rgb) => {
+      if (!rgb) return 0
+      return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255
+    }
+    
+    // Get brightness values
+    const bodyBrightness = calculateBrightness(bodyRGB)
+    const htmlBrightness = calculateBrightness(htmlRGB)
+    
+    // Use the brighter of the two as the main background
+    const mainBrightness = Math.max(bodyBrightness, htmlBrightness)
+    
+    // Sample additional elements for better detection
+    const sampleElements = [
+      document.querySelector('main'),
+      document.querySelector('article'),
+      document.querySelector('.content'),
+      document.querySelector('#content'),
+      document.querySelector('.main'),
+      document.querySelector('#main')
+    ].filter(el => el)
+    
+    let totalBrightness = mainBrightness
+    let sampleCount = 1
+    
+    sampleElements.forEach(el => {
+      const style = window.getComputedStyle(el)
+      const bgColor = style.backgroundColor
+      const rgb = getRGBValues(bgColor)
+      if (rgb) {
+        totalBrightness += calculateBrightness(rgb)
+        sampleCount++
+      }
+    })
+    
+    const averageBrightness = totalBrightness / sampleCount
+    
+    // Determine theme based on brightness - lower threshold for better light detection
+    const isDark = averageBrightness < 0.3
+    
+    console.log('🎨 Theme detection:', {
+      bodyBg: bodyBg,
+      htmlBg: htmlBg,
+      bodyBrightness: bodyBrightness.toFixed(3),
+      htmlBrightness: htmlBrightness.toFixed(3),
+      averageBrightness: averageBrightness.toFixed(3),
+      detectedTheme: isDark ? 'dark' : 'light'
+    })
+    
+    return isDark ? 'dark' : 'light'
+    
+  } catch (error) {
+    console.log('❌ Theme detection failed, defaulting to dark:', error.message)
+    return 'dark' // Default to dark theme
+  }
+}
+
 // Function to load API key from storage
 function loadApiKey() {
   chrome.storage.sync.get(['openai_api_key']).then((result) => {
@@ -36,15 +117,23 @@ let widgetRoot = null
 let isShowingWidget = false // Flag to prevent immediate closing
 let currentSelection = null // Store the current text selection
 let highlightElement = null // Store the highlight element
+let currentTheme = 'dark' // Store the current theme (dark/light)
 
 // Create widget container
 function createWidgetContainer() {
+  // Detect website theme
+  currentTheme = detectWebsiteTheme()
+  console.log('🎨 Using theme:', currentTheme)
+  
   // Create new container
   const container = document.createElement('div')
   container.id = 'ai-widget-container'
   container.className = 'ai-widget-container'
+  container.setAttribute('data-theme', currentTheme)
   
-  // Style the container with EXACT Figma styling
+  // Style the container with adaptive theme
+  const isDark = currentTheme === 'dark'
+  
   container.style.cssText = `
     position: fixed !important;
     top: 50% !important;
@@ -54,12 +143,13 @@ function createWidgetContainer() {
     width: 672px !important;
     max-width: 672px !important;
     padding: 32px !important;
-    background-color: rgba(255, 255, 255, 0.02) !important;
+    background-color: ${isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.02)'} !important;
     backdrop-filter: blur(12px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'} !important;
     border-radius: 24px !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    box-shadow: 0 25px 50px -12px ${isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.3)'} !important;
     font-family: ui-sans-serif, system-ui, sans-serif !important;
+    transition: all 0.3s ease !important;
   `
   
   // Add CSS animation for the loading spinner
@@ -129,6 +219,7 @@ function showWidget(selectedText, rect) {
       <AIWidget 
         selectedText={selectedText}
         onClose={hideWidget} // Pass the actual hideWidget function
+        theme={currentTheme} // Pass the detected theme
       />,
       container
     )
