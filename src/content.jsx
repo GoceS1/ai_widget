@@ -39,9 +39,6 @@ let highlightElement = null // Store the highlight element
 
 // Create widget container
 function createWidgetContainer() {
-  // Remove any existing widget
-  hideWidget()
-  
   // Create new container
   const container = document.createElement('div')
   container.id = 'ai-widget-container'
@@ -83,56 +80,60 @@ function createWidgetContainer() {
 
 // Show widget
 function showWidget(selectedText, rect) {
-  // console.log('🎨 showWidget called with text:', selectedText.substring(0, 50) + '...')
+  console.log('🎨 showWidget called with text:', selectedText.substring(0, 50) + '...')
   
   // Set flag to prevent immediate closing
   isShowingWidget = true
   
   try {
-    // Store the current selection
-    const selection = window.getSelection()
-    if (selection.rangeCount > 0) {
-      currentSelection = selection.getRangeAt(0).cloneRange()
-      
-      // Create highlight element
-      createHighlight()
-    }
-    
-    // Check if widget already exists
+    // Check if widget already exists first
     let container = document.getElementById('ai-widget-container')
     
     if (container) {
-      // If widget exists, just update the React component with new text
-      // console.log('🔄 Updating existing widget with new text')
-      ReactDOM.render(
-        <AIWidget 
-          selectedText={selectedText}
-          onClose={hideWidget} // Pass the actual hideWidget function
-        />,
-        container
-      )
-    } else {
-      // Create new container only if it doesn't exist
-      container = createWidgetContainer()
-      // console.log('️ Container created:', container)
+      // If widget exists, don't recreate it - just update the text if needed
+      console.log('🔄 Widget already exists, not recreating')
       
-      // console.log('⚛️ Attempting to render React component with ReactDOM.render...')
+      // Only store selection and create highlight if we don't have one
+      if (!currentSelection) {
+        const selection = window.getSelection()
+        if (selection.rangeCount > 0) {
+          currentSelection = selection.getRangeAt(0).cloneRange()
+          console.log('📌 Stored selection range')
+          createHighlight()
+        }
+      }
       
-      ReactDOM.render(
-        <AIWidget 
-          selectedText={selectedText}
-          onClose={hideWidget} // Pass the actual hideWidget function
-        />,
-        container
-      )
-      
-      // console.log('✅ React component rendered successfully with ReactDOM.render!')
+      return // Exit early, don't recreate the widget
     }
     
-    // Debug info (commented out for cleaner console)
-// console.log('🔍 Widget container position:', container.getBoundingClientRect())
-// console.log('🔍 Widget container styles:', window.getComputedStyle(container))
-// console.log('🔍 Widget container HTML:', container.innerHTML)
+    // Only create new widget if one doesn't exist
+    console.log('🆕 Creating new widget')
+    
+    // Store the current selection BEFORE creating the widget
+    const selection = window.getSelection()
+    if (selection.rangeCount > 0) {
+      currentSelection = selection.getRangeAt(0).cloneRange()
+      console.log('📌 Stored selection range')
+      
+      // Create highlight element immediately
+      createHighlight()
+    }
+    
+    // Create new container
+    container = createWidgetContainer()
+    console.log('️ Container created:', container)
+    
+    console.log('⚛️ Attempting to render React component with ReactDOM.render...')
+    
+    ReactDOM.render(
+      <AIWidget 
+        selectedText={selectedText}
+        onClose={hideWidget} // Pass the actual hideWidget function
+      />,
+      container
+    )
+    
+    console.log('✅ React component rendered successfully with ReactDOM.render!')
     
     // Reset flag after a short delay
     setTimeout(() => {
@@ -147,28 +148,75 @@ function showWidget(selectedText, rect) {
 
 // Create highlight element
 function createHighlight() {
-  if (!currentSelection) return
+  if (!currentSelection) {
+    console.log('❌ No current selection to highlight')
+    return
+  }
   
   // Remove existing highlight
   removeHighlight()
   
-  // Create highlight element
-  highlightElement = document.createElement('span')
-  highlightElement.style.cssText = `
-    background-color: rgba(59, 130, 246, 0.3) !important;
-    border-radius: 2px !important;
-    padding: 1px 2px !important;
-    position: relative !important;
-    z-index: 1 !important;
-  `
-  highlightElement.className = 'ai-widget-highlight'
-  
   try {
+    // Create highlight element
+    highlightElement = document.createElement('span')
+    highlightElement.style.cssText = `
+      background-color: rgba(0, 122, 255, 0.3) !important;
+      border-radius: 2px !important;
+      padding: 1px 2px !important;
+      position: relative !important;
+      z-index: 999998 !important;
+    `
+    highlightElement.className = 'ai-widget-highlight'
+    highlightElement.setAttribute('data-ai-widget-highlight', 'true')
+    
     // Clone the range and surround it with the highlight element
     const range = currentSelection.cloneRange()
+    
+    // Check if the range can be surrounded
+    if (range.collapsed) {
+      console.log('❌ Range is collapsed, cannot highlight')
+      return
+    }
+    
+    // Try to surround the contents
     range.surroundContents(highlightElement)
+    console.log('✅ Highlight created successfully')
+    
   } catch (error) {
-    console.log('Could not create highlight (text might be split across elements)')
+    console.log('❌ Could not create highlight:', error.message)
+    console.log('This might happen if text is split across multiple elements')
+    
+    // Fallback: try to highlight each text node separately
+    try {
+      const range = currentSelection.cloneRange()
+      const contents = range.extractContents()
+      const fragment = document.createDocumentFragment()
+      
+             // Create highlight wrapper
+       const highlightWrapper = document.createElement('span')
+       highlightWrapper.style.cssText = `
+         background-color: rgba(0, 122, 255, 0.3) !important;
+         border-radius: 2px !important;
+         padding: 1px 2px !important;
+         position: relative !important;
+         z-index: 999998 !important;
+       `
+      highlightWrapper.className = 'ai-widget-highlight'
+      highlightWrapper.setAttribute('data-ai-widget-highlight', 'true')
+      
+      // Move contents into highlight wrapper
+      while (contents.firstChild) {
+        highlightWrapper.appendChild(contents.firstChild)
+      }
+      
+      fragment.appendChild(highlightWrapper)
+      range.insertNode(fragment)
+      highlightElement = highlightWrapper
+      console.log('✅ Fallback highlight created successfully')
+      
+    } catch (fallbackError) {
+      console.log('❌ Fallback highlight also failed:', fallbackError.message)
+    }
   }
 }
 
@@ -176,6 +224,8 @@ function createHighlight() {
 function removeHighlight() {
   if (highlightElement) {
     try {
+      console.log('🗑️ Removing highlight element')
+      
       // Move the text back out of the highlight element
       const parent = highlightElement.parentNode
       if (parent) {
@@ -183,11 +233,36 @@ function removeHighlight() {
           parent.insertBefore(highlightElement.firstChild, highlightElement)
         }
         parent.removeChild(highlightElement)
+        console.log('✅ Highlight removed successfully')
       }
     } catch (error) {
-      console.log('Error removing highlight:', error)
+      console.log('❌ Error removing highlight:', error.message)
+      
+      // Fallback: just remove the element
+      try {
+        highlightElement.remove()
+        console.log('✅ Highlight removed with fallback method')
+      } catch (fallbackError) {
+        console.log('❌ Fallback removal also failed:', fallbackError.message)
+      }
     }
     highlightElement = null
+  } else {
+    // Also remove any orphaned highlights by class name
+    const existingHighlights = document.querySelectorAll('.ai-widget-highlight')
+    existingHighlights.forEach(highlight => {
+      try {
+        const parent = highlight.parentNode
+        if (parent) {
+          while (highlight.firstChild) {
+            parent.insertBefore(highlight.firstChild, highlight)
+          }
+          parent.removeChild(highlight)
+        }
+      } catch (error) {
+        console.log('❌ Error removing orphaned highlight:', error.message)
+      }
+    })
   }
 }
 
@@ -259,16 +334,34 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('click', (e) => {
   // Don't close if we're in the middle of showing a widget
   if (isShowingWidget) {
-    // console.log('🚫 Widget is being shown, ignoring click')
+    console.log('🚫 Widget is being shown, ignoring click')
     return
   }
   
   const container = document.getElementById('ai-widget-container')
   if (container && !container.contains(e.target)) {
-    // console.log('🖱️ Click outside widget, closing...')
+    console.log('🖱️ Click outside widget, closing...')
     hideWidget()
   } else if (container) {
-    // console.log('🖱️ Click inside widget, keeping open')
+    console.log('🖱️ Click inside widget, keeping open')
+  }
+})
+
+// Prevent selection loss when clicking inside widget
+document.addEventListener('mousedown', (e) => {
+  const container = document.getElementById('ai-widget-container')
+  if (container && container.contains(e.target)) {
+    // Prevent the default behavior that would clear the selection
+    e.stopPropagation()
+    console.log('🛡️ Preventing selection loss on widget click')
+  }
+})
+
+// Also prevent selection loss on focus events
+document.addEventListener('focusin', (e) => {
+  const container = document.getElementById('ai-widget-container')
+  if (container && container.contains(e.target)) {
+    console.log('🛡️ Preventing selection loss on widget focus')
   }
 })
 
