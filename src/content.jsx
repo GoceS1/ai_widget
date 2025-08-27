@@ -112,7 +112,7 @@ function getCurrentPosition() {
   const rect = container.getBoundingClientRect()
   const padding = 20
   const widgetWidth = 672
-  const widgetHeight = 400
+  const widgetHeight = 350
   
   // Check if widget is in each corner
   if (Math.abs(rect.top - padding) < 10 && Math.abs(rect.left - padding) < 10) {
@@ -134,7 +134,7 @@ function moveWidgetToPosition(position) {
   
   const padding = 20
   const widgetWidth = 672
-  const widgetHeight = 400
+  const widgetHeight = 350
   
   let top, left
   
@@ -206,8 +206,10 @@ function createWidgetContainer() {
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     z-index: 999999 !important;
-    width: 672px !important;
-    max-width: 672px !important;
+            width: 672px !important;
+        max-width: 672px !important;
+    height: 350px !important;
+    max-height: 350px !important;
     padding: 32px !important;
     background-color: ${isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.02)'} !important;
     backdrop-filter: blur(12px) !important;
@@ -499,7 +501,7 @@ document.addEventListener('keydown', (e) => {
       e.preventDefault()
       
       const widgetWidth = 672
-      const widgetHeight = 400
+      const widgetHeight = 350
       const padding = 20
       
       // State-aware movement system

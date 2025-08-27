@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { User, ChevronDown, Sparkles, Briefcase, Scissors, CheckCircle, Copy, Check, Loader2 } from 'lucide-react'
+import { User, ChevronDown, Scissors, CheckCircle, Copy, Check, Loader2 } from 'lucide-react'
 import { processTextWithAI } from '../services/aiService.js'
 
 const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
@@ -20,10 +20,8 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   ]
 
   const actions = [
-    { id: 'improve', label: 'Improve', icon: <Sparkles size={20} /> },
-    { id: 'professional', label: 'Make Professional', icon: <Briefcase size={20} /> },
-    { id: 'shorter', label: 'Make Shorter', icon: <Scissors size={20} /> },
     { id: 'grammar', label: 'Fix Grammar', icon: <CheckCircle size={20} /> },
+    { id: 'shorter', label: 'Make Shorter', icon: <Scissors size={20} /> },
   ]
 
   const handleAction = async (actionId, e) => {
@@ -228,7 +226,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
 
   const textareaStyle = {
     width: '100%',
-    minHeight: '120px',
+    minHeight: '100px',
     background: 'transparent',
     border: 'none',
     outline: 'none',
@@ -256,7 +254,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     display: 'flex',
     alignItems: 'center',
     gap: '12px', // Figma: gap-3
-    padding: '12px 16px', // Figma: px-4 py-3
+    padding: '8px 16px', // Reduced vertical padding
     borderRadius: '8px', // Figma: rounded-lg
     background: 'transparent',
     border: 'none',
