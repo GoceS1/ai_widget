@@ -47,3 +47,13 @@
     transform: rotate(360deg);
   }
 }
+
+/* Bouncing dots animation for loading */
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}

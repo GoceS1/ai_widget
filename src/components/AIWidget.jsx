@@ -196,7 +196,8 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   }
 
   const inputContainerStyle = {
-    marginBottom: '32px'
+    marginBottom: '32px',
+    position: 'relative'
   }
 
   const textareaStyle = {
@@ -327,11 +328,64 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Write, edit, or ask anything..."
-          style={textareaStyle}
+          style={{
+            ...textareaStyle,
+            opacity: isProcessing && processingAction === 'custom' ? 0.6 : 1,
+            transition: 'opacity 0.3s ease'
+          }}
+          disabled={isProcessing && processingAction === 'custom'}
         />
         
+        {/* Loading indicator for custom prompts */}
+        {isProcessing && processingAction === 'custom' && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: textColorSecondary,
+            fontSize: '14px',
+            zIndex: 10
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '4px'
+            }}>
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: textColorSecondary,
+                animation: 'bounce 1.4s ease-in-out infinite both'
+              }} />
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: textColorSecondary,
+                animation: 'bounce 1.4s ease-in-out infinite both 0.2s'
+              }} />
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: textColorSecondary,
+                animation: 'bounce 1.4s ease-in-out infinite both 0.4s'
+              }} />
+            </div>
+            <span>Processing...</span>
+          </div>
+        )}
+        
         {/* Keyboard shortcut hint */}
-        <div style={shortcutTextStyle}>
+        <div style={{
+          ...shortcutTextStyle,
+          opacity: isProcessing && processingAction === 'custom' ? 0.4 : 1,
+          transition: 'opacity 0.3s ease'
+        }}>
           Press ⌘+Enter to execute custom prompts
         </div>
       </div>

@@ -63,26 +63,21 @@ Analyze the text and fix all spelling, grammar, and punctuation mistakes.
 - Do not alter the author's vocabulary or sentence structure unless it is grammatically incorrect.
 - Your output must ONLY be the corrected text. Do not include any notes, explanations, or conversational phrases.`,
 
-  custom: `You are a versatile, context-aware AI assistant. Your entire purpose is to act upon a specific piece of selected text based on a custom instruction provided by the user.
+  custom: `You are a versatile, context-aware AI assistant. Your entire purpose is to act upon a piece of text based on a user's instruction.
 
-You will always be given two things:
-1. \`[SELECTED TEXT]\`: A block of text the user has highlighted on a webpage.
-2. \`[USER'S CUSTOM PROMPT]\`: A specific command or question from the user.
+You will be provided with the text inside <text_to_process> tags and the user's command inside <user_instruction> tags. Your task is to apply the instruction to the text.
 
-Your primary directive is to apply the \`[USER'S CUSTOM PROMPT]\` directly to the \`[SELECTED TEXT]\`.
+**Your mode of operation depends on the user's instruction:**
 
-**Your mode of operation depends on the user's prompt:**
+-   **If the instruction is to EDIT, REWRITE, or TRANSFORM the text:**
+    Your output MUST be **only** the newly transformed text.
 
-* **If the prompt is a command to EDIT, REWRITE, or TRANSFORM the text** (e.g., "Make this sound more confident," "Turn this into a rhyming poem," "Convert this to a bulleted list"):
-    * Your output MUST be **only** the newly transformed text.
-
-* **If the prompt is a QUESTION, a request for ANALYSIS, or a query ABOUT the text** (e.g., "Summarize the main points here," "What is the tone of this passage?", "Translate this to Spanish," "Explain this concept simply"):
-    * Your output MUST be a direct answer to the question, using the \`[SELECTED TEXT]\` as the primary source of truth.
+-   **If the instruction is a QUESTION or a request for ANALYSIS:**
+    Your output MUST be a direct answer, using the provided text as the sole source of information.
 
 **Crucial Constraints:**
-* **Never ignore the \`[SELECTED TEXT]\`**. Your response must always be fundamentally linked to it.
-* Do not invent information that is not present in or cannot be inferred from the \`[SELECTED TEXT]\`, unless the user's prompt explicitly asks for creative expansion (e.g., "Expand on this idea").
-* **Your output must be direct and clean.** Do not include conversational filler like "Sure, here's the summary:" or "Based on the text you provided...". Directly provide the transformed text or the answer.`
+-   NEVER repeat the input tags (<text_to_process>, <user_instruction>) or their content in your response.
+-   Your output must be direct and clean. Provide only the transformed text or the direct answer. Do not include any conversational filler like "Sure, here you go:".`
 }
 
 // Function to process text with AI
@@ -98,7 +93,7 @@ export async function processTextWithAI(action, selectedText, customPrompt = nul
     // If custom prompt is provided, format it properly
     let userPrompt
     if (customPrompt) {
-      userPrompt = `[USER'S CUSTOM PROMPT]: ${customPrompt}\n\n[SELECTED TEXT]: ${selectedText}`
+      userPrompt = `<user_instruction>${customPrompt}</user_instruction>\n\n<text_to_process>${selectedText}</text_to_process>`
     } else {
       userPrompt = selectedText
     }
