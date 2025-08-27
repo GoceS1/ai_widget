@@ -6,6 +6,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   // console.log(' AIWidget component rendering with text:', selectedText)
   const [inputText, setInputText] = useState('')
   const [persona, setPersona] = useState('default')
+  const [showPersonaDropdown, setShowPersonaDropdown] = useState(false)
   const [copyState, setCopyState] = useState('copy') // 'copy', 'copied', 'loading'
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingAction, setProcessingAction] = useState(null)
@@ -13,6 +14,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   const personas = [
     { id: 'default', name: 'Default', description: 'General writing assistance' },
     { id: 'b2b-sales', name: 'B2B Sales', description: 'Professional sales communication' },
+    { id: 'project-management', name: 'Project Management', description: 'Project planning and coordination' },
     { id: 'my-boss', name: 'My Boss', description: 'Executive-level communication' },
     { id: 'creative', name: 'Creative', description: 'Creative and engaging content' },
   ]
@@ -42,7 +44,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     
     try {
       // Process text with AI
-      const result = await processTextWithAI(actionId, textToProcess)
+      const result = await processTextWithAI(actionId, textToProcess, null, persona)
       
       if (result.success) {
         // Update textarea with AI response
@@ -99,6 +101,30 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     onClose() // This should call hideWidget from content.jsx
   }
 
+  const getCurrentPersona = () => {
+    return personas.find(p => p.id === persona) || personas[0]
+  }
+
+  const handlePersonaSelect = (personaId, e) => {
+    e.stopPropagation() // Prevent event bubbling
+    setPersona(personaId)
+    setShowPersonaDropdown(false)
+  }
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPersonaDropdown) {
+        setShowPersonaDropdown(false)
+      }
+    }
+
+    if (showPersonaDropdown) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showPersonaDropdown])
+
   const handleKeyDown = async (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
@@ -127,7 +153,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
       
       try {
         // Process text with AI using custom prompt
-        const result = await processTextWithAI('improve', textToProcess, customPrompt)
+        const result = await processTextWithAI('improve', textToProcess, customPrompt, persona)
         
         if (result.success) {
           // Update textarea with AI response
@@ -272,12 +298,81 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     <>
       {/* Header with persona selector and action buttons */}
       <div style={headerStyle}>
-        <div style={personaSelectorStyle}>
-          <User size={16} style={{ color: textColor }} />
-          <span style={{ fontSize: '14px', color: textColor }}>
-            {personas[0].name}
-          </span>
-          <ChevronDown size={16} style={{ color: textColor }} />
+        <div style={{ position: 'relative' }}>
+          <div 
+            style={personaSelectorStyle}
+            onClick={() => setShowPersonaDropdown(!showPersonaDropdown)}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = bgColorHover
+              e.target.style.borderColor = borderColorHover
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = bgColor
+              e.target.style.borderColor = borderColor
+            }}
+          >
+            <User size={16} style={{ color: textColor }} />
+            <span style={{ fontSize: '14px', color: textColor }}>
+              {getCurrentPersona().name}
+            </span>
+            <ChevronDown size={16} style={{ color: textColor }} />
+          </div>
+          
+          {/* Persona Dropdown */}
+          {showPersonaDropdown && (
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              style={{
+              position: 'absolute',
+              top: '100%',
+              left: '0',
+              marginTop: '4px',
+              backgroundColor: isDark ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${borderColor}`,
+              borderRadius: '12px',
+              padding: '8px 0',
+              minWidth: '200px',
+              zIndex: 1000,
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
+            }}>
+              {personas.map(p => (
+                <div
+                  key={p.id}
+                  onClick={(e) => handlePersonaSelect(p.id, e)}
+                  style={{
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    color: textColor,
+                    fontSize: '14px',
+                    backgroundColor: p.id === persona ? bgColorHover : 'transparent',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (p.id !== persona) {
+                      e.target.style.backgroundColor = bgColorHover
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (p.id !== persona) {
+                      e.target.style.backgroundColor = 'transparent'
+                    }
+                  }}
+                >
+                  <div style={{ fontWeight: p.id === persona ? '600' : '400' }}>
+                    {p.name}
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: textColorTertiary,
+                    marginTop: '2px'
+                  }}>
+                    {p.description}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         {/* Action Buttons */}
