@@ -104,6 +104,71 @@ function loadApiKey() {
 // Load API key on startup
 loadApiKey()
 
+// Position detection and movement logic
+function getCurrentPosition() {
+  const container = document.getElementById('ai-widget-container')
+  if (!container) return null
+  
+  const rect = container.getBoundingClientRect()
+  const padding = 20
+  const widgetWidth = 672
+  const widgetHeight = 400
+  
+  // Check if widget is in each corner
+  if (Math.abs(rect.top - padding) < 10 && Math.abs(rect.left - padding) < 10) {
+    return 'TOP_LEFT'
+  } else if (Math.abs(rect.top - padding) < 10 && Math.abs(rect.left - (window.innerWidth - widgetWidth - padding)) < 10) {
+    return 'TOP_RIGHT'
+  } else if (Math.abs(rect.top - (window.innerHeight - widgetHeight - padding)) < 10 && Math.abs(rect.left - padding) < 10) {
+    return 'BOTTOM_LEFT'
+  } else if (Math.abs(rect.top - (window.innerHeight - widgetHeight - padding)) < 10 && Math.abs(rect.left - (window.innerWidth - widgetWidth - padding)) < 10) {
+    return 'BOTTOM_RIGHT'
+  }
+  
+  return 'CENTER' // Default to center if not in a corner
+}
+
+function moveWidgetToPosition(position) {
+  const container = document.getElementById('ai-widget-container')
+  if (!container) return
+  
+  const padding = 20
+  const widgetWidth = 672
+  const widgetHeight = 400
+  
+  let top, left
+  
+  switch (position) {
+    case 'TOP_LEFT':
+      top = padding
+      left = padding
+      break
+    case 'TOP_RIGHT':
+      top = padding
+      left = window.innerWidth - widgetWidth - padding
+      break
+    case 'BOTTOM_LEFT':
+      top = window.innerHeight - widgetHeight - padding
+      left = padding
+      break
+    case 'BOTTOM_RIGHT':
+      top = window.innerHeight - widgetHeight - padding
+      left = window.innerWidth - widgetWidth - padding
+      break
+    default:
+      return
+  }
+  
+  // Update the widget position
+  container.style.cssText = container.style.cssText.replace(
+    /top:\s*[^;]+;\s*left:\s*[^;]+;\s*transform:\s*[^;]+;/,
+    `top: ${top}px !important; left: ${left}px !important; transform: none !important;`
+  )
+  
+  currentPosition = position
+  console.log(`📍 Moved widget to ${position}`)
+}
+
 // Listen for messages from popup to reload API key
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'RELOAD_API_KEY') {
@@ -118,6 +183,7 @@ let isShowingWidget = false // Flag to prevent immediate closing
 let currentSelection = null // Store the current text selection
 let highlightElement = null // Store the highlight element
 let currentTheme = 'dark' // Store the current theme (dark/light)
+let currentPosition = null // Store the current widget position state
 
 // Create widget container
 function createWidgetContainer() {
@@ -381,6 +447,9 @@ function hideWidget() {
   } else {
     console.log('❌ No widget container found to remove')
   }
+  
+  // Reset position state
+  currentPosition = null
 }
 
 // Handle text selection
@@ -414,12 +483,63 @@ document.addEventListener('mouseup', (e) => {
   }
 })
 
-// Handle escape key
+// Handle keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+  // Escape key - close widget
   if (e.key === 'Escape') {
     hideWidget()
   }
-})
+  
+  // Only handle widget positioning shortcuts if widget is open
+  const container = document.getElementById('ai-widget-container')
+  if (!container) return
+  
+      // Check for Cmd/Ctrl + arrow keys (not just Cmd/Ctrl alone)
+    if ((e.metaKey || e.ctrlKey) && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      e.preventDefault()
+      
+      const widgetWidth = 672
+      const widgetHeight = 400
+      const padding = 20
+      
+      // State-aware movement system
+      const currentPos = currentPosition || getCurrentPosition()
+      
+      // If this is the first movement, go to TOP_RIGHT (home position)
+      if (!currentPosition) {
+        moveWidgetToPosition('TOP_RIGHT')
+        return
+      }
+      
+      // Movement rules based on current position
+      const movementRules = {
+        'TOP_RIGHT': {
+          'ArrowDown': 'BOTTOM_RIGHT',
+          'ArrowLeft': 'TOP_LEFT'
+        },
+        'TOP_LEFT': {
+          'ArrowDown': 'BOTTOM_LEFT',
+          'ArrowRight': 'TOP_RIGHT'
+        },
+        'BOTTOM_LEFT': {
+          'ArrowUp': 'TOP_LEFT',
+          'ArrowRight': 'BOTTOM_RIGHT'
+        },
+        'BOTTOM_RIGHT': {
+          'ArrowUp': 'TOP_RIGHT',
+          'ArrowLeft': 'BOTTOM_LEFT'
+        }
+      }
+      
+      const rules = movementRules[currentPos]
+      if (rules && rules[e.key]) {
+        moveWidgetToPosition(rules[e.key])
+      } else {
+        console.log(`📍 No movement rule for ${e.key} from ${currentPos}`)
+      }
+    }
+  }
+)
 
 // Handle clicks outside widget
 document.addEventListener('click', (e) => {
