@@ -538,6 +538,24 @@ document.addEventListener('keydown', (e) => {
         console.log(`📍 No movement rule for ${e.key} from ${currentPos}`)
       }
     }
+    
+    // Check for Cmd/Ctrl + K to trigger copy button
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault()
+      
+      const container = document.getElementById('ai-widget-container')
+      if (!container) return
+      
+      // Find and click the copy button (first button in the action buttons area)
+      const actionButtons = container.querySelectorAll('button')
+      if (actionButtons.length >= 2) {
+        // The copy button is the first button in the action buttons area
+        actionButtons[0].click()
+        console.log('📋 Triggered copy button via ⌘+K')
+      } else {
+        console.log('⚠️ Copy button not found')
+      }
+    }
   }
 )
 

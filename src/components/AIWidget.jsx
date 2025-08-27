@@ -68,8 +68,8 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     // Prevent event bubbling to avoid closing widget
     e.stopPropagation()
     
-    // Copy the selected text from the webpage, not the textarea
-    const textToCopy = selectedText || inputText.trim()
+    // Copy whatever is in the textarea
+    const textToCopy = inputText.trim()
     
     if (textToCopy) {
       try {
