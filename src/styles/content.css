@@ -57,3 +57,49 @@
     transform: scale(1);
   }
 }
+
+/* Glass Widget Animations */
+@keyframes glass-distortion {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.02) rotate(1deg); }
+  50% { transform: scale(0.98) rotate(-1deg); }
+  75% { transform: scale(1.01) rotate(0.5deg); }
+}
+
+@keyframes glass-volumetric {
+  0% { opacity: 0.3; transform: scale(0.9); }
+  100% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes glass-refraction {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.glass-widget-main {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-widget-main:hover {
+  transform: scale(1.05);
+  filter: contrast(1.2) brightness(1.1) saturate(1.2);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Glass trigger positioning */
+.glass-trigger {
+  position: fixed !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  opacity: 0 !important;
+  transform: scale(0.8) !important;
+  z-index: 10000 !important;
+}
+
+.glass-trigger.visible {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}

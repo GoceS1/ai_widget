@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom' // Change this import
 import AIWidget from './components/AIWidget'
+import { GlassWidget } from './components/GlassWidget'
 import { setApiKey } from './services/aiService.js'
 import './styles/globals.css'
 
@@ -185,6 +186,13 @@ let highlightElement = null // Store the highlight element
 let currentTheme = 'dark' // Store the current theme (dark/light)
 let currentPosition = null // Store the current widget position state
 
+// Glass trigger widget state
+let glassContainer = null
+let glassRoot = null
+let isShowingGlass = false
+let glassPosition = { x: 0, y: 0 }
+let selectedTextForGlass = '' // Store selected text for when glass is clicked
+
 // Create widget container
 function createWidgetContainer() {
   // Detect website theme
@@ -234,6 +242,166 @@ function createWidgetContainer() {
   document.body.appendChild(container)
   
   return container
+}
+
+// Show glass trigger widget
+function showGlassWidget(selectedText, rect) {
+  console.log('✨ showGlassWidget called with text:', selectedText.substring(0, 50) + '...')
+  
+  // Store the selected text for later use
+  selectedTextForGlass = selectedText
+  
+  console.log('📐 Received rect in showGlassWidget:', {
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    right: rect.right,
+    bottom: rect.bottom
+  })
+  
+  // Calculate position at bottom-right of selection
+  // getBoundingClientRect() gives viewport-relative coordinates, so we need to add scroll offset
+  // for absolute positioning, but the rect.bottom already includes the current viewport position
+  let x = rect.right + 8 // 8px offset to the right
+  let y = rect.bottom + 8 // 8px offset below
+  
+  console.log('🧮 Positioning calculation:', {
+    'rect.right': rect.right,
+    'rect.bottom': rect.bottom,
+    'window.scrollX': window.scrollX,
+    'window.scrollY': window.scrollY,
+    'final x': x,
+    'final y': y
+  })
+  
+  // Only use fallback if rect is completely invalid
+  if (rect.width === 0 && rect.height === 0) {
+    console.log('⚠️ Using fallback positioning - rect is completely invalid')
+    x = window.innerWidth / 2
+    y = window.innerHeight / 2
+  }
+  
+  // Store position
+  glassPosition = { x, y }
+  
+  // If glass widget already exists, just update position
+  if (glassContainer) {
+    glassContainer.style.position = 'fixed'
+    glassContainer.style.left = `${x}px`
+    glassContainer.style.top = `${y}px`
+    glassContainer.classList.add('visible')
+    isShowingGlass = true
+    return
+  }
+  
+  // Create glass container
+  glassContainer = document.createElement('div')
+  glassContainer.id = 'glass-trigger-container'
+  glassContainer.className = 'glass-trigger visible'
+  glassContainer.style.cssText = `
+    position: fixed !important;
+    left: ${x}px !important;
+    top: ${y}px !important;
+    z-index: 10000 !important;
+    pointer-events: auto !important;
+  `
+  
+  document.body.appendChild(glassContainer)
+  
+  // Create React root and render glass widget
+  if (typeof ReactDOM.createRoot !== 'undefined') {
+    glassRoot = ReactDOM.createRoot(glassContainer)
+    glassRoot.render(
+      <GlassWidget onClick={handleGlassClick} />
+    )
+  } else {
+    ReactDOM.render(
+      <GlassWidget onClick={handleGlassClick} />,
+      glassContainer
+    )
+  }
+  
+  // Debug: Log the actual rendered size
+  setTimeout(() => {
+    if (glassContainer) {
+      const computedStyle = window.getComputedStyle(glassContainer)
+      const rect = glassContainer.getBoundingClientRect()
+      console.log('🔍 Glass container debug info:', {
+        'container width': computedStyle.width,
+        'container height': computedStyle.height,
+        'container display': computedStyle.display,
+        'container visibility': computedStyle.visibility,
+        'container opacity': computedStyle.opacity,
+        'container position': computedStyle.position,
+        'container z-index': computedStyle.zIndex,
+        'actual rendered rect': rect,
+        'is visible?': rect.width > 0 && rect.height > 0
+      })
+      
+      // Check the inner glass widget too
+      const glassWidget = glassContainer.querySelector('div')
+      if (glassWidget) {
+        const glassStyle = window.getComputedStyle(glassWidget)
+        const glassRect = glassWidget.getBoundingClientRect()
+        console.log('🔍 Inner glass widget debug:', {
+          'widget width': glassStyle.width,
+          'widget height': glassStyle.height,
+          'widget background': glassStyle.background,
+          'widget border': glassStyle.border,
+          'widget rect': glassRect
+        })
+      }
+    }
+  }, 100)
+  
+  isShowingGlass = true
+  console.log('✨ Glass widget shown at position:', { x, y })
+  
+  // Add a small delay before allowing click outside to close
+  setTimeout(() => {
+    if (glassContainer) {
+      glassContainer.dataset.allowClickOutside = 'true'
+    }
+  }, 300)
+}
+
+// Handle glass widget click
+function handleGlassClick() {
+  console.log('🔮 Glass widget clicked, showing main AI widget')
+  
+  // Hide glass widget
+  hideGlassWidget()
+  
+  // Show main AI widget with stored text and position
+  if (selectedTextForGlass && currentSelection) {
+    const rect = currentSelection.getBoundingClientRect()
+    showWidget(selectedTextForGlass, rect)
+  }
+}
+
+// Hide glass widget
+function hideGlassWidget() {
+  console.log('🔮 Hiding glass widget')
+  
+  if (glassContainer) {
+    glassContainer.classList.remove('visible')
+    glassContainer.dataset.allowClickOutside = 'false'
+    
+    // Remove after animation
+    setTimeout(() => {
+      if (glassContainer) {
+        if (glassRoot && typeof glassRoot.unmount === 'function') {
+          glassRoot.unmount()
+        }
+        glassContainer.remove()
+        glassContainer = null
+        glassRoot = null
+      }
+    }, 300)
+  }
+  
+  isShowingGlass = false
 }
 
 // Show widget
@@ -429,6 +597,11 @@ function removeHighlight() {
 function hideWidget() {
   console.log('🎯 hideWidget function called')
   
+  // Also hide glass widget if it's showing
+  if (isShowingGlass) {
+    hideGlassWidget()
+  }
+  
   // Remove highlight
   removeHighlight()
   
@@ -452,15 +625,17 @@ function hideWidget() {
   
   // Reset position state
   currentPosition = null
+  selectedTextForGlass = ''
 }
 
 // Handle text selection
 document.addEventListener('mouseup', (e) => {
   // console.log('🖱️ Mouse up event detected')
   
-  // Don't trigger if clicking inside the widget
+  // Don't trigger if clicking inside the widget or glass widget
   const container = document.getElementById('ai-widget-container')
-  if (container && container.contains(e.target)) {
+  const glassContainer = document.getElementById('glass-trigger-container')
+  if ((container && container.contains(e.target)) || (glassContainer && glassContainer.contains(e.target))) {
     console.log('🚫 Click inside widget, ignoring')
     return
   }
@@ -472,16 +647,40 @@ document.addEventListener('mouseup', (e) => {
 // console.log('📏 Selected text length:', selectedText.length)
   
   if (selectedText.length > 0) {
-    // console.log('✅ Text selected, attempting to show widget...')
+    // console.log('✅ Text selected, attempting to show glass widget...')
     
-    // Get selection coordinates
+    // Get selection coordinates FIRST while selection is still valid
     const range = selection.getRangeAt(0)
     const rect = range.getBoundingClientRect()
     
-    // Show widget immediately (no delay needed)
-    showWidget(selectedText, rect)
+    console.log('📐 Original rect from selection:', {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left
+    })
+    
+    // Store the current selection AFTER getting rect
+    if (selection.rangeCount > 0) {
+      currentSelection = selection.getRangeAt(0).cloneRange()
+      console.log('📌 Stored selection range for glass widget')
+      
+      // Create highlight element immediately
+      createHighlight()
+    }
+    
+    // Show glass widget with the rect we got while selection was valid
+    showGlassWidget(selectedText, rect)
   } else {
     // console.log('❌ No text selected or selection is empty')
+    // Hide glass widget if no text is selected
+    if (isShowingGlass) {
+      hideGlassWidget()
+    }
   }
 })
 
@@ -570,18 +769,31 @@ document.addEventListener('click', (e) => {
   }
   
   const container = document.getElementById('ai-widget-container')
-  if (container && !container.contains(e.target)) {
-    console.log('🖱️ Click outside widget, closing...')
+  const glassContainer = document.getElementById('glass-trigger-container')
+  
+  // Check if click is outside both widgets
+  const clickedOutsideMain = container && !container.contains(e.target)
+  const clickedOutsideGlass = glassContainer && !glassContainer.contains(e.target)
+  
+  if (container && clickedOutsideMain) {
+    console.log('🖱️ Click outside main widget, closing...')
     hideWidget()
   } else if (container) {
-    console.log('🖱️ Click inside widget, keeping open')
+    console.log('🖱️ Click inside main widget, keeping open')
+  }
+  
+  // Handle glass widget clicks separately (only if enough time has passed)
+  if (glassContainer && clickedOutsideGlass && !clickedOutsideMain && glassContainer.dataset.allowClickOutside === 'true') {
+    console.log('🔮 Click outside glass widget, hiding glass...')
+    hideGlassWidget()
   }
 })
 
 // Prevent selection loss when clicking inside widget
 document.addEventListener('mousedown', (e) => {
   const container = document.getElementById('ai-widget-container')
-  if (container && container.contains(e.target)) {
+  const glassContainer = document.getElementById('glass-trigger-container')
+  if ((container && container.contains(e.target)) || (glassContainer && glassContainer.contains(e.target))) {
     // Prevent the default behavior that would clear the selection
     e.stopPropagation()
     console.log('🛡️ Preventing selection loss on widget click')
@@ -591,7 +803,8 @@ document.addEventListener('mousedown', (e) => {
 // Also prevent selection loss on focus events
 document.addEventListener('focusin', (e) => {
   const container = document.getElementById('ai-widget-container')
-  if (container && container.contains(e.target)) {
+  const glassContainer = document.getElementById('glass-trigger-container')
+  if ((container && container.contains(e.target)) || (glassContainer && glassContainer.contains(e.target))) {
     console.log('🛡️ Preventing selection loss on widget focus')
   }
 })
