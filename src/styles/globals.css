@@ -42,3 +42,51 @@
   background: rgba(34, 39, 46, 0.7);
   border: 1px solid rgba(215, 20, 65, 0.2);
 }
+
+/* Widget expansion animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Smooth height transitions for widget */
+.ai-widget-container {
+  transition: height 0.3s ease, top 0.3s ease, left 0.3s ease !important;
+}
+
+/* Custom Scrollbar for the AI Widget Textarea */
+.ai-widget-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ai-widget-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-widget-textarea::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.ai-widget-textarea::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme='light'] .ai-widget-textarea::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='light'] .ai-widget-textarea::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}

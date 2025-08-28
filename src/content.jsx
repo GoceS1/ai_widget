@@ -71,14 +71,14 @@ function detectWebsiteTheme() {
     // Determine theme based on brightness - lower threshold for better light detection
     const isDark = averageBrightness < 0.3
     
-    console.log('🎨 Theme detection:', {
+    /* console.log('🎨 Theme detection:', {
       bodyBg: bodyBg,
       htmlBg: htmlBg,
       bodyBrightness: bodyBrightness.toFixed(3),
       htmlBrightness: htmlBrightness.toFixed(3),
       averageBrightness: averageBrightness.toFixed(3),
       detectedTheme: isDark ? 'dark' : 'light'
-    })
+    }) */
     
     return isDark ? 'dark' : 'light'
     
@@ -93,7 +93,7 @@ function loadApiKey() {
   chrome.storage.sync.get(['openai_api_key']).then((result) => {
     if (result.openai_api_key) {
       setApiKey(result.openai_api_key)
-      console.log('✅ OpenAI API key loaded from storage')
+      // console.log('✅ OpenAI API key loaded from storage')
     } else {
       console.log('⚠️ No OpenAI API key found. Please set it in the extension popup.')
     }
@@ -113,7 +113,7 @@ function getCurrentPosition() {
   const rect = container.getBoundingClientRect()
   const padding = 20
   const widgetWidth = 672
-  const widgetHeight = 350
+  const widgetHeight = currentWidgetHeight || 280
   
   // Check if widget is in each corner
   if (Math.abs(rect.top - padding) < 10 && Math.abs(rect.left - padding) < 10) {
@@ -132,10 +132,10 @@ function getCurrentPosition() {
 function moveWidgetToPosition(position) {
   const container = document.getElementById('ai-widget-container')
   if (!container) return
-  
+
   const padding = 20
   const widgetWidth = 672
-  const widgetHeight = 350
+  const widgetHeight = currentWidgetHeight || 280
   
   let top, left
   
@@ -161,19 +161,17 @@ function moveWidgetToPosition(position) {
   }
   
   // Update the widget position
-  container.style.cssText = container.style.cssText.replace(
-    /top:\s*[^;]+;\s*left:\s*[^;]+;\s*transform:\s*[^;]+;/,
-    `top: ${top}px !important; left: ${left}px !important; transform: none !important;`
-  )
+  container.style.setProperty('top', `${top}px`, 'important')
+  container.style.setProperty('left', `${left}px`, 'important')
+  container.style.setProperty('transform', 'none', 'important')
   
   currentPosition = position
-  console.log(`📍 Moved widget to ${position}`)
 }
 
 // Listen for messages from popup to reload API key
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'RELOAD_API_KEY') {
-    console.log('🔄 Reloading API key from storage...')
+    // console.log('🔄 Reloading API key from storage...')
     loadApiKey()
   }
 })
@@ -185,6 +183,7 @@ let currentSelection = null // Store the current text selection
 let highlightElement = null // Store the highlight element
 let currentTheme = 'dark' // Store the current theme (dark/light)
 let currentPosition = null // Store the current widget position state
+let currentWidgetHeight = 280 // Store the current widget height
 
 // Glass trigger widget state
 let glassContainer = null
@@ -197,7 +196,7 @@ let selectedTextForGlass = '' // Store selected text for when glass is clicked
 function createWidgetContainer() {
   // Detect website theme
   currentTheme = detectWebsiteTheme()
-  console.log('🎨 Using theme:', currentTheme)
+  // console.log('🎨 Using theme:', currentTheme)
   
   // Create new container
   const container = document.createElement('div')
@@ -208,24 +207,27 @@ function createWidgetContainer() {
   // Style the container with adaptive theme
   const isDark = currentTheme === 'dark'
   
+  const initialTop = (window.innerHeight - currentWidgetHeight) / 2;
+  const initialLeft = (window.innerWidth - 672) / 2;
+
   container.style.cssText = `
     position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
+    top: ${initialTop}px !important;
+    left: ${initialLeft}px !important;
+    transform: none !important;
     z-index: 999999 !important;
-            width: 672px !important;
-        max-width: 672px !important;
-    height: 350px !important;
-    max-height: 350px !important;
-    padding: 32px !important;
+    width: 672px !important;
+    max-width: 672px !important;
+    height: ${currentWidgetHeight}px !important;
+    max-height: 600px !important;
+    padding: 24px !important;
     background-color: ${isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.02)'} !important;
     backdrop-filter: blur(12px) !important;
     border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'} !important;
     border-radius: 24px !important;
     box-shadow: 0 25px 50px -12px ${isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.3)'} !important;
     font-family: ui-sans-serif, system-ui, sans-serif !important;
-    transition: all 0.3s ease !important;
+    transition: height 0.3s ease, top 0.3s ease, left 0.3s ease !important;
   `
   
   // Add CSS animation for the loading spinner
@@ -246,19 +248,19 @@ function createWidgetContainer() {
 
 // Show glass trigger widget
 function showGlassWidget(selectedText, rect) {
-  console.log('✨ showGlassWidget called with text:', selectedText.substring(0, 50) + '...')
+  // console.log('✨ showGlassWidget called with text:', selectedText.substring(0, 50) + '...')
   
   // Store the selected text for later use
   selectedTextForGlass = selectedText
   
-  console.log('📐 Received rect in showGlassWidget:', {
+  /* console.log('📐 Received rect in showGlassWidget:', {
     x: rect.x,
     y: rect.y,
     width: rect.width,
     height: rect.height,
     right: rect.right,
     bottom: rect.bottom
-  })
+  }) */
   
   // Calculate position at bottom-right of selection
   // getBoundingClientRect() gives viewport-relative coordinates, so we need to add scroll offset
@@ -266,18 +268,18 @@ function showGlassWidget(selectedText, rect) {
   let x = rect.right + 8 // 8px offset to the right
   let y = rect.bottom + 8 // 8px offset below
   
-  console.log('🧮 Positioning calculation:', {
+  /* console.log('🧮 Positioning calculation:', {
     'rect.right': rect.right,
     'rect.bottom': rect.bottom,
     'window.scrollX': window.scrollX,
     'window.scrollY': window.scrollY,
     'final x': x,
     'final y': y
-  })
+  }) */
   
   // Only use fallback if rect is completely invalid
   if (rect.width === 0 && rect.height === 0) {
-    console.log('⚠️ Using fallback positioning - rect is completely invalid')
+    // console.log('⚠️ Using fallback positioning - rect is completely invalid')
     x = window.innerWidth / 2
     y = window.innerHeight / 2
   }
@@ -323,7 +325,7 @@ function showGlassWidget(selectedText, rect) {
   }
   
   // Debug: Log the actual rendered size
-  setTimeout(() => {
+  /* setTimeout(() => {
     if (glassContainer) {
       const computedStyle = window.getComputedStyle(glassContainer)
       const rect = glassContainer.getBoundingClientRect()
@@ -353,10 +355,10 @@ function showGlassWidget(selectedText, rect) {
         })
       }
     }
-  }, 100)
+  }, 100) */
   
   isShowingGlass = true
-  console.log('✨ Glass widget shown at position:', { x, y })
+  // console.log('✨ Glass widget shown at position:', { x, y })
   
   // Add a small delay before allowing click outside to close
   setTimeout(() => {
@@ -368,7 +370,7 @@ function showGlassWidget(selectedText, rect) {
 
 // Handle glass widget click
 function handleGlassClick() {
-  console.log('🔮 Glass widget clicked, showing main AI widget')
+  // console.log('🔮 Glass widget clicked, showing main AI widget')
   
   // Hide glass widget
   hideGlassWidget()
@@ -382,7 +384,7 @@ function handleGlassClick() {
 
 // Hide glass widget
 function hideGlassWidget() {
-  console.log('🔮 Hiding glass widget')
+  // console.log('🔮 Hiding glass widget')
   
   if (glassContainer) {
     glassContainer.classList.remove('visible')
@@ -406,7 +408,7 @@ function hideGlassWidget() {
 
 // Show widget
 function showWidget(selectedText, rect) {
-  console.log('🎨 showWidget called with text:', selectedText.substring(0, 50) + '...')
+  // console.log('🎨 showWidget called with text:', selectedText.substring(0, 50) + '...')
   
   // Set flag to prevent immediate closing
   isShowingWidget = true
@@ -417,14 +419,14 @@ function showWidget(selectedText, rect) {
     
     if (container) {
       // If widget exists, don't recreate it - just update the text if needed
-      console.log('🔄 Widget already exists, not recreating')
+      // console.log('🔄 Widget already exists, not recreating')
       
       // Only store selection and create highlight if we don't have one
       if (!currentSelection) {
         const selection = window.getSelection()
         if (selection.rangeCount > 0) {
           currentSelection = selection.getRangeAt(0).cloneRange()
-          console.log('📌 Stored selection range')
+          // console.log('📌 Stored selection range')
           createHighlight()
         }
       }
@@ -433,13 +435,13 @@ function showWidget(selectedText, rect) {
     }
     
     // Only create new widget if one doesn't exist
-    console.log('🆕 Creating new widget')
+    // console.log('🆕 Creating new widget')
     
     // Store the current selection BEFORE creating the widget
     const selection = window.getSelection()
     if (selection.rangeCount > 0) {
       currentSelection = selection.getRangeAt(0).cloneRange()
-      console.log('📌 Stored selection range')
+      // console.log('📌 Stored selection range')
       
       // Create highlight element immediately
       createHighlight()
@@ -447,20 +449,21 @@ function showWidget(selectedText, rect) {
     
     // Create new container
     container = createWidgetContainer()
-    console.log('️ Container created:', container)
+    // console.log('️ Container created:', container)
     
-    console.log('⚛️ Attempting to render React component with ReactDOM.render...')
+    // console.log('⚛️ Attempting to render React component with ReactDOM.render...')
     
     ReactDOM.render(
       <AIWidget 
         selectedText={selectedText}
         onClose={hideWidget} // Pass the actual hideWidget function
         theme={currentTheme} // Pass the detected theme
+        onHeightChange={handleWidgetHeightChange} // Pass height change handler
       />,
       container
     )
     
-    console.log('✅ React component rendered successfully with ReactDOM.render!')
+    // console.log('✅ React component rendered successfully with ReactDOM.render!')
     
     // Reset flag after a short delay
     setTimeout(() => {
@@ -476,7 +479,7 @@ function showWidget(selectedText, rect) {
 // Create highlight element
 function createHighlight() {
   if (!currentSelection) {
-    console.log('❌ No current selection to highlight')
+    // console.log('❌ No current selection to highlight')
     return
   }
   
@@ -501,17 +504,17 @@ function createHighlight() {
     
     // Check if the range can be surrounded
     if (range.collapsed) {
-      console.log('❌ Range is collapsed, cannot highlight')
+      // console.log('❌ Range is collapsed, cannot highlight')
       return
     }
     
     // Try to surround the contents
     range.surroundContents(highlightElement)
-    console.log('✅ Highlight created successfully')
+    // console.log('✅ Highlight created successfully')
     
   } catch (error) {
-    console.log('❌ Could not create highlight:', error.message)
-    console.log('This might happen if text is split across multiple elements')
+    // console.log('❌ Could not create highlight:', error.message)
+    // console.log('This might happen if text is split across multiple elements')
     
     // Fallback: try to highlight each text node separately
     try {
@@ -539,10 +542,10 @@ function createHighlight() {
       fragment.appendChild(highlightWrapper)
       range.insertNode(fragment)
       highlightElement = highlightWrapper
-      console.log('✅ Fallback highlight created successfully')
+      // console.log('✅ Fallback highlight created successfully')
       
     } catch (fallbackError) {
-      console.log('❌ Fallback highlight also failed:', fallbackError.message)
+      // console.log('❌ Fallback highlight also failed:', fallbackError.message)
     }
   }
 }
@@ -551,7 +554,7 @@ function createHighlight() {
 function removeHighlight() {
   if (highlightElement) {
     try {
-      console.log('🗑️ Removing highlight element')
+      // console.log('🗑️ Removing highlight element')
       
       // Move the text back out of the highlight element
       const parent = highlightElement.parentNode
@@ -560,17 +563,17 @@ function removeHighlight() {
           parent.insertBefore(highlightElement.firstChild, highlightElement)
         }
         parent.removeChild(highlightElement)
-        console.log('✅ Highlight removed successfully')
+        // console.log('✅ Highlight removed successfully')
       }
     } catch (error) {
-      console.log('❌ Error removing highlight:', error.message)
+      // console.log('❌ Error removing highlight:', error.message)
       
       // Fallback: just remove the element
       try {
         highlightElement.remove()
-        console.log('✅ Highlight removed with fallback method')
+        // console.log('✅ Highlight removed with fallback method')
       } catch (fallbackError) {
-        console.log('❌ Fallback removal also failed:', fallbackError.message)
+        // console.log('❌ Fallback removal also failed:', fallbackError.message)
       }
     }
     highlightElement = null
@@ -587,15 +590,71 @@ function removeHighlight() {
           parent.removeChild(highlight)
         }
       } catch (error) {
-        console.log('❌ Error removing orphaned highlight:', error.message)
+        // console.log('❌ Error removing orphaned highlight:', error.message)
       }
     })
   }
 }
 
+// Handle widget height changes with position-aware expansion
+function handleWidgetHeightChange(newHeight) {
+  const container = document.getElementById('ai-widget-container')
+  if (!container) return
+
+  const oldHeight = currentWidgetHeight
+  if (newHeight === oldHeight) return
+
+  // Determine expansion direction based on the CURRENT position
+  const currentPos = currentPosition || getCurrentPosition()
+  let expansionDirection
+  switch (currentPos) {
+    case 'TOP_LEFT':
+    case 'TOP_RIGHT':
+      expansionDirection = 'DOWNWARD'
+      break
+    case 'BOTTOM_LEFT':
+    case 'BOTTOM_RIGHT':
+      expansionDirection = 'UPWARD'
+      break
+    case 'CENTER':
+    default:
+      expansionDirection = 'BOTH'
+  }
+
+  const heightDifference = newHeight - oldHeight
+  currentWidgetHeight = newHeight
+  
+  // Update container height - use setProperty to ensure it overrides inline styles
+  container.style.setProperty('height', `${newHeight}px`, 'important')
+  
+  // Adjust position based on expansion direction and current position
+  if (currentPos && heightDifference !== 0) {
+    const currentTop = parseInt(container.style.top, 10) || 0
+    let newTop = currentTop
+    const padding = 20 // Ensure we use the same padding value as moveWidgetToPosition
+
+    switch (expansionDirection) {
+      case 'UPWARD':
+        // For bottom corners, recalculate top position to be anchored to the bottom of the screen
+        newTop = window.innerHeight - newHeight - padding
+        break
+        
+      case 'DOWNWARD':
+      case 'BOTH':
+        // For top corners or center, keep top position the same (expand downward)
+        break
+    }
+    
+    // Update position if it changed, using a tolerance for floating point issues
+    if (Math.abs(newTop - currentTop) > 1) {
+      container.style.setProperty('top', `${newTop}px`, 'important')
+    }
+  }
+}
+
 // Make sure hideWidget function is properly defined
 function hideWidget() {
-  console.log('🎯 hideWidget function called')
+  // console.log('🎯 hideWidget function called')
   
   // Also hide glass widget if it's showing
   if (isShowingGlass) {
@@ -610,7 +669,7 @@ function hideWidget() {
   
   const container = document.getElementById('ai-widget-container')
   if (container) {
-    console.log('🗑️ Removing widget container')
+    // console.log('🗑️ Removing widget container')
     
     // Unmount React component
     ReactDOM.unmountComponentAtNode(container)
@@ -618,13 +677,14 @@ function hideWidget() {
     // Remove the container from DOM
     container.remove()
     
-    console.log('✅ Widget removed successfully')
+    // console.log('✅ Widget removed successfully')
   } else {
-    console.log('❌ No widget container found to remove')
+    // console.log('❌ No widget container found to remove')
   }
   
   // Reset position state
   currentPosition = null
+  currentWidgetHeight = 280
   selectedTextForGlass = ''
 }
 
@@ -636,7 +696,7 @@ document.addEventListener('mouseup', (e) => {
   const container = document.getElementById('ai-widget-container')
   const glassContainer = document.getElementById('glass-trigger-container')
   if ((container && container.contains(e.target)) || (glassContainer && glassContainer.contains(e.target))) {
-    console.log('🚫 Click inside widget, ignoring')
+    // console.log('🚫 Click inside widget, ignoring')
     return
   }
   
@@ -653,7 +713,7 @@ document.addEventListener('mouseup', (e) => {
     const range = selection.getRangeAt(0)
     const rect = range.getBoundingClientRect()
     
-    console.log('📐 Original rect from selection:', {
+    /* console.log('📐 Original rect from selection:', {
       x: rect.x,
       y: rect.y,
       width: rect.width,
@@ -662,12 +722,12 @@ document.addEventListener('mouseup', (e) => {
       right: rect.right,
       bottom: rect.bottom,
       left: rect.left
-    })
+    }) */
     
     // Store the current selection AFTER getting rect
     if (selection.rangeCount > 0) {
       currentSelection = selection.getRangeAt(0).cloneRange()
-      console.log('📌 Stored selection range for glass widget')
+      // console.log('📌 Stored selection range for glass widget')
       
       // Create highlight element immediately
       createHighlight()
@@ -700,7 +760,7 @@ document.addEventListener('keydown', (e) => {
       e.preventDefault()
       
       const widgetWidth = 672
-      const widgetHeight = 350
+      const widgetHeight = currentWidgetHeight || 280
       const padding = 20
       
       // State-aware movement system
@@ -736,7 +796,7 @@ document.addEventListener('keydown', (e) => {
       if (rules && rules[e.key]) {
         moveWidgetToPosition(rules[e.key])
       } else {
-        console.log(`📍 No movement rule for ${e.key} from ${currentPos}`)
+        // console.log(`📍 No movement rule for ${e.key} from ${currentPos}`)
       }
     }
     
@@ -752,9 +812,9 @@ document.addEventListener('keydown', (e) => {
       if (actionButtons.length >= 2) {
         // The copy button is the first button in the action buttons area
         actionButtons[0].click()
-        console.log('📋 Triggered copy button via ⌘+K')
+        // console.log('📋 Triggered copy button via ⌘+K')
       } else {
-        console.log('⚠️ Copy button not found')
+        // console.log('⚠️ Copy button not found')
       }
     }
   }
@@ -764,7 +824,7 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('click', (e) => {
   // Don't close if we're in the middle of showing a widget
   if (isShowingWidget) {
-    console.log('🚫 Widget is being shown, ignoring click')
+    // console.log('🚫 Widget is being shown, ignoring click')
     return
   }
   
@@ -776,15 +836,15 @@ document.addEventListener('click', (e) => {
   const clickedOutsideGlass = glassContainer && !glassContainer.contains(e.target)
   
   if (container && clickedOutsideMain) {
-    console.log('🖱️ Click outside main widget, closing...')
+    // console.log('🖱️ Click outside main widget, closing...')
     hideWidget()
   } else if (container) {
-    console.log('🖱️ Click inside main widget, keeping open')
+    // console.log('🖱️ Click inside main widget, keeping open')
   }
   
   // Handle glass widget clicks separately (only if enough time has passed)
   if (glassContainer && clickedOutsideGlass && !clickedOutsideMain && glassContainer.dataset.allowClickOutside === 'true') {
-    console.log('🔮 Click outside glass widget, hiding glass...')
+    // console.log('🔮 Click outside glass widget, hiding glass...')
     hideGlassWidget()
   }
 })
@@ -796,7 +856,7 @@ document.addEventListener('mousedown', (e) => {
   if ((container && container.contains(e.target)) || (glassContainer && glassContainer.contains(e.target))) {
     // Prevent the default behavior that would clear the selection
     e.stopPropagation()
-    console.log('🛡️ Preventing selection loss on widget click')
+    // console.log('🛡️ Preventing selection loss on widget click')
   }
 })
 
@@ -805,13 +865,13 @@ document.addEventListener('focusin', (e) => {
   const container = document.getElementById('ai-widget-container')
   const glassContainer = document.getElementById('glass-trigger-container')
   if ((container && container.contains(e.target)) || (glassContainer && glassContainer.contains(e.target))) {
-    console.log('🛡️ Preventing selection loss on widget focus')
+    // console.log('🛡️ Preventing selection loss on widget focus')
   }
 })
 
 // Add this at the end to test if the script is running
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 DOM loaded, content script is active!')
+  // console.log('🚀 DOM loaded, content script is active!')
   
   // Test if we can create elements
   const testDiv = document.createElement('div')
@@ -822,3 +882,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // Remove after 3 seconds
   setTimeout(() => testDiv.remove(), 3000)
 })
+

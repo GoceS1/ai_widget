@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { User, ChevronDown, Scissors, CheckCircle, Copy, Check, Loader2 } from 'lucide-react'
 import { processTextWithAI } from '../services/aiService.js'
 
-const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
+const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => {
   // console.log(' AIWidget component rendering with text:', selectedText)
   const [inputText, setInputText] = useState('')
   const [persona, setPersona] = useState('default')
@@ -10,6 +10,40 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   const [copyState, setCopyState] = useState('copy') // 'copy', 'copied', 'loading'
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingAction, setProcessingAction] = useState(null)
+
+  // Calculate optimal height based on content
+  const calculateOptimalHeight = (text) => {
+    // Start with a base height for a ~3 line text area
+    const baseHeight = 280 
+    
+    if (!text || text.trim().length === 0) return baseHeight
+
+    const lineCount = text.split('\n').length
+    const charCount = text.length
+    
+    // Add height for additional lines (roughly 28px per line for better spacing)
+    const additionalLineHeight = Math.max(0, lineCount - 3) * 28
+    
+    // Add height for character count (for very long lines)
+    const charBasedHeight = Math.max(0, (charCount - 200) * 0.5)
+    
+    const calculatedHeight = baseHeight + additionalLineHeight + charBasedHeight
+    
+    // Apply limits
+    const minHeight = baseHeight
+    const maxHeight = 600 // Keep the same max height
+    
+    return Math.min(Math.max(calculatedHeight, minHeight), maxHeight)
+  }
+
+  // Update height when content changes
+  useEffect(() => {
+    const newHeight = calculateOptimalHeight(inputText)
+    // Notify parent component of height change
+    if (onHeightChange) {
+      onHeightChange(newHeight)
+    }
+  }, [inputText, onHeightChange])
 
   const personas = [
     { id: 'default', name: 'Default', description: 'General writing assistance' },
@@ -143,7 +177,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
         return
       }
       
-      console.log('Processing custom prompt:', customPrompt, 'with text:', textToProcess)
+      // console.log('Processing custom prompt:', customPrompt, 'with text:', textToProcess)
       
       // Set loading state
       setIsProcessing(true)
@@ -186,7 +220,8 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '24px'
+    marginBottom: '16px',
+    flexShrink: 0 // Prevent header from shrinking
   }
 
   const personaSelectorStyle = {
@@ -220,13 +255,18 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
   }
 
   const inputContainerStyle = {
-    marginBottom: '32px',
-    position: 'relative'
+    marginBottom: '8px', // Minimal margin to give maximum space to buttons
+    position: 'relative',
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0, // Important for flex child
+    overflow: 'hidden' // Prevent overflow
   }
 
   const textareaStyle = {
     width: '100%',
-    minHeight: '100px',
+    minHeight: '80px', // Adjusted for a ~3 line initial view
     background: 'transparent',
     border: 'none',
     outline: 'none',
@@ -234,20 +274,25 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     color: textColor, // Theme-aware text color
     fontSize: '18px', // Figma: text-lg
     lineHeight: '1.625', // Figma: leading-relaxed
-    fontFamily: 'inherit'
+    fontFamily: 'inherit',
+    overflowY: 'auto', // Add scroll when textarea reaches max height
+    overflowX: 'hidden' // Prevent horizontal overflow
   }
 
   const shortcutTextStyle = {
     fontSize: '12px',
     color: textColorTertiary, // Theme-aware text color
-    marginTop: '8px'
+    marginTop: '8px',
+    flexShrink: 0 // Prevent text from shrinking
   }
 
   const buttonContainerStyle = {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: '8px',
-    marginTop: '0'
+    marginTop: '0',
+    flexShrink: 0, // Prevent buttons from shrinking
+    maxHeight: '50px' // Ensure buttons don't exceed this height
   }
 
   const shortcutButtonStyle = {
@@ -292,8 +337,17 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
     }
   }
 
+  // Main container style with dynamic height
+  const containerStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    overflow: 'hidden',
+    position: 'relative'
+  }
+
   return (
-    <>
+    <div style={containerStyle}>
       {/* Header with persona selector and action buttons */}
       <div style={headerStyle}>
         <div style={{ position: 'relative' }}>
@@ -414,116 +468,124 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark' }) => {
         </div>
       </div>
 
-      {/* Main input area */}
-      <div style={inputContainerStyle}>
-        <textarea
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Write, edit, or ask anything..."
-          style={{
-            ...textareaStyle,
-            opacity: isProcessing && processingAction === 'custom' ? 0.6 : 1,
-            transition: 'opacity 0.3s ease'
-          }}
-          disabled={isProcessing && processingAction === 'custom'}
-        />
-        
-        {/* Loading indicator for custom prompts */}
-        {isProcessing && processingAction === 'custom' && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: textColorSecondary,
-            fontSize: '14px',
-            zIndex: 10
-          }}>
-            <div style={{
-              display: 'flex',
-              gap: '4px'
-            }}>
+      {/* Content wrapper - takes up remaining space */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+        {/* Main input area */}
+        <div style={inputContainerStyle}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <textarea
+              className="ai-widget-textarea"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Write, edit, or ask anything..."
+              style={{
+                ...textareaStyle,
+                opacity: isProcessing && processingAction === 'custom' ? 0.6 : 1,
+                transition: 'opacity 0.3s ease',
+                flex: 1
+              }}
+              disabled={isProcessing && processingAction === 'custom'}
+            />
+            
+            {/* Loading indicator for custom prompts */}
+            {isProcessing && processingAction === 'custom' && (
               <div style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: textColorSecondary,
-                animation: 'bounce 1.4s ease-in-out infinite both'
-              }} />
-              <div style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: textColorSecondary,
-                animation: 'bounce 1.4s ease-in-out infinite both 0.2s'
-              }} />
-              <div style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: textColorSecondary,
-                animation: 'bounce 1.4s ease-in-out infinite both 0.4s'
-              }} />
-            </div>
-            <span>Processing...</span>
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: textColorSecondary,
+                fontSize: '14px',
+                zIndex: 10
+              }}>
+                <div style={{
+                  display: 'flex',
+                  gap: '4px'
+                }}>
+                  <div style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: textColorSecondary,
+                    animation: 'bounce 1.4s ease-in-out infinite both'
+                  }} />
+                  <div style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: textColorSecondary,
+                    animation: 'bounce 1.4s ease-in-out infinite both 0.2s'
+                  }} />
+                  <div style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: textColorSecondary,
+                    animation: 'bounce 1.4s ease-in-out infinite both 0.4s'
+                  }} />
+                </div>
+                <span>Processing...</span>
+              </div>
+            )}
           </div>
-        )}
-        
-        {/* Keyboard shortcut hint */}
-        <div style={{
-          ...shortcutTextStyle,
-          opacity: isProcessing && processingAction === 'custom' ? 0.4 : 1,
-          transition: 'opacity 0.3s ease'
-        }}>
-          Press ⌘+Enter to execute custom prompts
+          
+          {/* Keyboard shortcut hint */}
+          <div style={{
+            ...shortcutTextStyle,
+            opacity: isProcessing && processingAction === 'custom' ? 0.4 : 1,
+            transition: 'opacity 0.3s ease',
+            flexShrink: 0 // Ensure this doesn't shrink
+          }}>
+            Press ⌘+Enter to execute custom prompts
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div style={buttonContainerStyle}>
+          {actions.map(action => {
+            const isProcessingThisAction = isProcessing && processingAction === action.id
+            
+            return (
+              <button
+                key={action.id}
+                onClick={(e) => handleAction(action.id, e)}
+                disabled={isProcessing}
+                style={{
+                  ...shortcutButtonStyle,
+                  opacity: isProcessing && !isProcessingThisAction ? 0.5 : 1,
+                  cursor: isProcessing ? 'not-allowed' : 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isProcessing) {
+                    e.target.style.backgroundColor = bgColorHover
+                    e.target.style.color = textColor
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isProcessing) {
+                    e.target.style.backgroundColor = 'transparent'
+                    e.target.style.color = textColorSecondary
+                  }
+                }}
+              >
+                {isProcessingThisAction ? (
+                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  action.icon
+                )}
+                <span style={{ fontSize: '14px' }}>
+                  {isProcessingThisAction ? 'Processing...' : action.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
-
-      {/* Action buttons */}
-      <div style={buttonContainerStyle}>
-        {actions.map(action => {
-          const isProcessingThisAction = isProcessing && processingAction === action.id
-          
-          return (
-            <button
-              key={action.id}
-              onClick={(e) => handleAction(action.id, e)}
-              disabled={isProcessing}
-              style={{
-                ...shortcutButtonStyle,
-                opacity: isProcessing && !isProcessingThisAction ? 0.5 : 1,
-                cursor: isProcessing ? 'not-allowed' : 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                if (!isProcessing) {
-                  e.target.style.backgroundColor = bgColorHover
-                  e.target.style.color = textColor
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isProcessing) {
-                  e.target.style.backgroundColor = 'transparent'
-                  e.target.style.color = textColorSecondary
-                }
-              }}
-            >
-              {isProcessingThisAction ? (
-                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-              ) : (
-                action.icon
-              )}
-              <span style={{ fontSize: '14px' }}>
-                {isProcessingThisAction ? 'Processing...' : action.label}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </>
+    </div>
   )
 }
 
