@@ -180,7 +180,6 @@ let widgetContainer = null
 let widgetRoot = null
 let isShowingWidget = false // Flag to prevent immediate closing
 let currentSelection = null // Store the current text selection
-let highlightElement = null // Store the highlight element
 let currentTheme = 'dark' // Store the current theme (dark/light)
 let currentPosition = null // Store the current widget position state
 let currentWidgetHeight = 280 // Store the current widget height
@@ -487,19 +486,6 @@ function createHighlight() {
   removeHighlight()
   
   try {
-    // Create highlight element
-    highlightElement = document.createElement('span')
-    highlightElement.style.cssText = `
-      background-color: rgba(0, 122, 255, 0.3) !important;
-      border-radius: 2px !important;
-      padding: 1px 2px !important;
-      position: relative !important;
-      z-index: 999998 !important;
-    `
-    highlightElement.className = 'ai-widget-highlight'
-    highlightElement.setAttribute('data-ai-widget-highlight', 'true')
-    
-    // Clone the range and surround it with the highlight element
     const range = currentSelection.cloneRange()
     
     // Check if the range can be surrounded
@@ -507,93 +493,44 @@ function createHighlight() {
       // console.log('❌ Range is collapsed, cannot highlight')
       return
     }
-    
-    // Try to surround the contents
-    range.surroundContents(highlightElement)
-    // console.log('✅ Highlight created successfully')
+
+    const rects = range.getClientRects()
+    const fragment = document.createDocumentFragment()
+
+    for (const rect of rects) {
+      const highlightBox = document.createElement('div')
+      highlightBox.className = 'ai-widget-highlight'
+      highlightBox.style.cssText = `
+        position: fixed;
+        top: ${rect.top}px;
+        left: ${rect.left}px;
+        width: ${rect.width}px;
+        height: ${rect.height}px;
+        background-color: rgba(0, 122, 255, 0.3) !important;
+        border-radius: 2px !important;
+        z-index: 999998 !important;
+        pointer-events: none !important;
+      `
+      fragment.appendChild(highlightBox)
+    }
+
+    document.body.appendChild(fragment)
     
   } catch (error) {
     // console.log('❌ Could not create highlight:', error.message)
-    // console.log('This might happen if text is split across multiple elements')
-    
-    // Fallback: try to highlight each text node separately
-    try {
-      const range = currentSelection.cloneRange()
-      const contents = range.extractContents()
-      const fragment = document.createDocumentFragment()
-      
-             // Create highlight wrapper
-       const highlightWrapper = document.createElement('span')
-       highlightWrapper.style.cssText = `
-         background-color: rgba(0, 122, 255, 0.3) !important;
-         border-radius: 2px !important;
-         padding: 1px 2px !important;
-         position: relative !important;
-         z-index: 999998 !important;
-       `
-      highlightWrapper.className = 'ai-widget-highlight'
-      highlightWrapper.setAttribute('data-ai-widget-highlight', 'true')
-      
-      // Move contents into highlight wrapper
-      while (contents.firstChild) {
-        highlightWrapper.appendChild(contents.firstChild)
-      }
-      
-      fragment.appendChild(highlightWrapper)
-      range.insertNode(fragment)
-      highlightElement = highlightWrapper
-      // console.log('✅ Fallback highlight created successfully')
-      
-    } catch (fallbackError) {
-      // console.log('❌ Fallback highlight also failed:', fallbackError.message)
-    }
   }
 }
 
 // Remove highlight element
 function removeHighlight() {
-  if (highlightElement) {
+  const existingHighlights = document.querySelectorAll('.ai-widget-highlight')
+  existingHighlights.forEach(highlight => {
     try {
-      // console.log('🗑️ Removing highlight element')
-      
-      // Move the text back out of the highlight element
-      const parent = highlightElement.parentNode
-      if (parent) {
-        while (highlightElement.firstChild) {
-          parent.insertBefore(highlightElement.firstChild, highlightElement)
-        }
-        parent.removeChild(highlightElement)
-        // console.log('✅ Highlight removed successfully')
-      }
+      highlight.remove()
     } catch (error) {
       // console.log('❌ Error removing highlight:', error.message)
-      
-      // Fallback: just remove the element
-      try {
-        highlightElement.remove()
-        // console.log('✅ Highlight removed with fallback method')
-      } catch (fallbackError) {
-        // console.log('❌ Fallback removal also failed:', fallbackError.message)
-      }
     }
-    highlightElement = null
-  } else {
-    // Also remove any orphaned highlights by class name
-    const existingHighlights = document.querySelectorAll('.ai-widget-highlight')
-    existingHighlights.forEach(highlight => {
-      try {
-        const parent = highlight.parentNode
-        if (parent) {
-          while (highlight.firstChild) {
-            parent.insertBefore(highlight.firstChild, highlight)
-          }
-          parent.removeChild(highlight)
-        }
-      } catch (error) {
-        // console.log('❌ Error removing orphaned highlight:', error.message)
-      }
-    })
-  }
+  })
 }
 
 // Handle widget height changes with position-aware expansion

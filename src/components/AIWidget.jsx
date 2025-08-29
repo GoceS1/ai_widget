@@ -254,16 +254,6 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
   }
 
-  const inputContainerStyle = {
-    marginBottom: '8px', // Minimal margin to give maximum space to buttons
-    position: 'relative',
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0, // Important for flex child
-    overflow: 'hidden' // Prevent overflow
-  }
-
   const textareaStyle = {
     width: '100%',
     minHeight: '80px', // Adjusted for a ~3 line initial view
@@ -469,83 +459,79 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
       </div>
 
       {/* Content wrapper - takes up remaining space */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-        {/* Main input area */}
-        <div style={inputContainerStyle}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <textarea
-              className="ai-widget-textarea"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Write, edit, or ask anything..."
-              style={{
-                ...textareaStyle,
-                opacity: isProcessing && processingAction === 'custom' ? 0.6 : 1,
-                transition: 'opacity 0.3s ease',
-                flex: 1
-              }}
-              disabled={isProcessing && processingAction === 'custom'}
-            />
-            
-            {/* Loading indicator for custom prompts */}
-            {isProcessing && processingAction === 'custom' && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: textColorSecondary,
-                fontSize: '14px',
-                zIndex: 10
-              }}>
-                <div style={{
-                  display: 'flex',
-                  gap: '4px'
-                }}>
-                  <div style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: textColorSecondary,
-                    animation: 'bounce 1.4s ease-in-out infinite both'
-                  }} />
-                  <div style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: textColorSecondary,
-                    animation: 'bounce 1.4s ease-in-out infinite both 0.2s'
-                  }} />
-                  <div style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: textColorSecondary,
-                    animation: 'bounce 1.4s ease-in-out infinite both 0.4s'
-                  }} />
-                </div>
-                <span>Processing...</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Keyboard shortcut hint */}
-          <div style={{
-            ...shortcutTextStyle,
-            opacity: isProcessing && processingAction === 'custom' ? 0.4 : 1,
+      <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <textarea
+          className="ai-widget-textarea"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Write, edit, or ask anything..."
+          style={{
+            ...textareaStyle,
+            opacity: isProcessing && processingAction === 'custom' ? 0.6 : 1,
             transition: 'opacity 0.3s ease',
-            flexShrink: 0 // Ensure this doesn't shrink
+            flex: 1
+          }}
+          disabled={isProcessing && processingAction === 'custom'}
+        />
+        
+        {/* Loading indicator for custom prompts */}
+        {isProcessing && processingAction === 'custom' && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: textColorSecondary,
+            fontSize: '14px',
+            zIndex: 10
           }}>
-            Press ⌘+Enter to execute custom prompts
+            <div style={{
+              display: 'flex',
+              gap: '4px'
+            }}>
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: textColorSecondary,
+                animation: 'bounce 1.4s ease-in-out infinite both'
+              }} />
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: textColorSecondary,
+                animation: 'bounce 1.4s ease-in-out infinite both 0.2s'
+              }} />
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: textColorSecondary,
+                animation: 'bounce 1.4s ease-in-out infinite both 0.4s'
+              }} />
+            </div>
+            <span>Processing...</span>
           </div>
-        </div>
+        )}
+      </div>
+          
+      {/* Keyboard shortcut hint */}
+      <div style={{
+        ...shortcutTextStyle,
+        opacity: isProcessing && processingAction === 'custom' ? 0.4 : 1,
+        transition: 'opacity 0.3s ease',
+        flexShrink: 0 // Ensure this doesn't shrink
+      }}>
+        Press ⌘+Enter to execute custom prompts
+      </div>
 
-        {/* Action buttons */}
-        <div style={buttonContainerStyle}>
+      {/* Action buttons */}
+      <div style={buttonContainerStyle}>
           {actions.map(action => {
             const isProcessingThisAction = isProcessing && processingAction === action.id
             
@@ -583,7 +569,6 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
               </button>
             )
           })}
-        </div>
       </div>
     </div>
   )
