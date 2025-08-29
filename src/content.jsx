@@ -220,7 +220,8 @@ function createWidgetContainer() {
     height: ${currentWidgetHeight}px !important;
     max-height: 600px !important;
     padding: 24px !important;
-    background-color: ${isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.02)'} !important;
+    box-sizing: border-box !important;
+    background-color: ${isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'} !important;
     backdrop-filter: blur(12px) !important;
     border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'} !important;
     border-radius: 24px !important;
@@ -462,6 +463,23 @@ function showWidget(selectedText, rect) {
       container
     )
     
+    // Debug: Check initial computed styles
+    setTimeout(() => {
+      const computedStyle = window.getComputedStyle(container)
+      const actualHeight = computedStyle.height
+      const actualPaddingTop = computedStyle.paddingTop
+      const actualPaddingBottom = computedStyle.paddingBottom
+      const actualBoxSizing = computedStyle.boxSizing
+      
+      console.log(`🔍 [${currentTheme}] INITIAL computed styles:`, {
+        height: actualHeight,
+        paddingTop: actualPaddingTop,
+        paddingBottom: actualPaddingBottom,
+        boxSizing: actualBoxSizing,
+        totalVisualHeight: parseInt(actualHeight) + parseInt(actualPaddingTop) + parseInt(actualPaddingBottom)
+      })
+    }, 200)
+    
     // console.log('✅ React component rendered successfully with ReactDOM.render!')
     
     // Reset flag after a short delay
@@ -541,6 +559,13 @@ function handleWidgetHeightChange(newHeight) {
   const oldHeight = currentWidgetHeight
   if (newHeight === oldHeight) return
 
+  console.log(`🔍 [${currentTheme}] handleWidgetHeightChange called:`, {
+    oldHeight: oldHeight,
+    newHeight: newHeight,
+    heightDifference: newHeight - oldHeight,
+    currentTheme: currentTheme
+  })
+
   // Determine expansion direction based on the CURRENT position
   const currentPos = currentPosition || getCurrentPosition()
   let expansionDirection
@@ -561,8 +586,27 @@ function handleWidgetHeightChange(newHeight) {
   const heightDifference = newHeight - oldHeight
   currentWidgetHeight = newHeight
   
+  console.log(`🔍 [${currentTheme}] Setting container height to:`, newHeight)
+  
   // Update container height - use setProperty to ensure it overrides inline styles
   container.style.setProperty('height', `${newHeight}px`, 'important')
+  
+  // Debug: Check actual computed styles after setting
+  setTimeout(() => {
+    const computedStyle = window.getComputedStyle(container)
+    const actualHeight = computedStyle.height
+    const actualPaddingTop = computedStyle.paddingTop
+    const actualPaddingBottom = computedStyle.paddingBottom
+    const actualBoxSizing = computedStyle.boxSizing
+    
+    console.log(`🔍 [${currentTheme}] ACTUAL computed styles:`, {
+      height: actualHeight,
+      paddingTop: actualPaddingTop,
+      paddingBottom: actualPaddingBottom,
+      boxSizing: actualBoxSizing,
+      totalVisualHeight: parseInt(actualHeight) + parseInt(actualPaddingTop) + parseInt(actualPaddingBottom)
+    })
+  }, 100)
   
   // Adjust position based on expansion direction and current position
   if (currentPos && heightDifference !== 0) {
@@ -585,6 +629,7 @@ function handleWidgetHeightChange(newHeight) {
     // Update position if it changed, using a tolerance for floating point issues
     if (Math.abs(newTop - currentTop) > 1) {
       container.style.setProperty('top', `${newTop}px`, 'important')
+      console.log(`🔍 [${currentTheme}] Updated position - top:`, newTop)
     }
   }
 }

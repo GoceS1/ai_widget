@@ -16,7 +16,10 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     // Start with a base height for a ~3 line text area
     const baseHeight = 280 
     
-    if (!text || text.trim().length === 0) return baseHeight
+    if (!text || text.trim().length === 0) {
+      console.log(`🔍 [${theme}] Height calc: empty text, returning base height:`, baseHeight)
+      return baseHeight
+    }
 
     const lineCount = text.split('\n').length
     const charCount = text.length
@@ -33,12 +36,25 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     const minHeight = baseHeight
     const maxHeight = 600 // Keep the same max height
     
-    return Math.min(Math.max(calculatedHeight, minHeight), maxHeight)
+    const finalHeight = Math.min(Math.max(calculatedHeight, minHeight), maxHeight)
+    
+    console.log(`🔍 [${theme}] Height calculation:`, {
+      textLength: charCount,
+      lineCount: lineCount,
+      baseHeight: baseHeight,
+      additionalLineHeight: additionalLineHeight,
+      charBasedHeight: charBasedHeight,
+      calculatedHeight: calculatedHeight,
+      finalHeight: finalHeight
+    })
+    
+    return finalHeight
   }
 
   // Update height when content changes
   useEffect(() => {
     const newHeight = calculateOptimalHeight(inputText)
+    console.log(`🔍 [${theme}] useEffect triggered - calculated height:`, newHeight)
     // Notify parent component of height change
     if (onHeightChange) {
       onHeightChange(newHeight)
@@ -211,7 +227,7 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
   const textColor = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 1)'
   const textColorSecondary = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.95)'
   const textColorTertiary = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.7)'
-  const bgColor = isDark ? 'rgba(255, 255, 255, 0.01)' : 'transparent'
+  const bgColor = isDark ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.02)'
   const borderColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.2)'
   const borderColorHover = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.4)'
   const bgColorHover = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.1)'
@@ -221,7 +237,6 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: '16px',
-    flexShrink: 0 // Prevent header from shrinking
   }
 
   const personaSelectorStyle = {
@@ -262,9 +277,13 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     outline: 'none',
     resize: 'none',
     color: textColor, // Theme-aware text color
+    boxSizing: 'border-box',
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
     fontSize: '18px', // Figma: text-lg
+    fontWeight: '400',
     lineHeight: '1.625', // Figma: leading-relaxed
-    fontFamily: 'inherit',
+    letterSpacing: 'normal',
+    textTransform: 'none',
     overflowY: 'auto', // Add scroll when textarea reaches max height
     overflowX: 'hidden' // Prevent horizontal overflow
   }
@@ -273,7 +292,6 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     fontSize: '12px',
     color: textColorTertiary, // Theme-aware text color
     marginTop: '8px',
-    flexShrink: 0 // Prevent text from shrinking
   }
 
   const buttonContainerStyle = {
@@ -281,8 +299,6 @@ const AIWidget = ({ selectedText, onClose, theme = 'dark', onHeightChange }) => 
     gridTemplateColumns: '1fr 1fr',
     gap: '8px',
     marginTop: '0',
-    flexShrink: 0, // Prevent buttons from shrinking
-    maxHeight: '50px' // Ensure buttons don't exceed this height
   }
 
   const shortcutButtonStyle = {
