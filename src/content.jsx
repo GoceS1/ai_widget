@@ -806,6 +806,46 @@ document.addEventListener('focusin', (e) => {
   }
 })
 
+// --- Scroll Handling Logic ---
+let isScrolling = false
+
+function handleScroll() {
+  if (!isScrolling) {
+    window.requestAnimationFrame(() => {
+      updatePositionsOnScroll()
+      isScrolling = false
+    })
+    isScrolling = true
+  }
+}
+
+function updatePositionsOnScroll() {
+  if (!currentSelection) return
+
+  const rect = currentSelection.getBoundingClientRect()
+
+  // Hide everything if the selection is out of the viewport
+  if (rect.bottom < 0 || rect.top > window.innerHeight) {
+    if (isShowingGlass) hideGlassWidget()
+    removeHighlight()
+    return
+  }
+
+  // Update highlight position
+  removeHighlight()
+  createHighlight()
+
+  // Update glass widget position
+  if (isShowingGlass && glassContainer) {
+    const x = rect.right + 8
+    const y = rect.bottom + 8
+    glassContainer.style.left = `${x}px`
+    glassContainer.style.top = `${y}px`
+  }
+}
+
+document.addEventListener('scroll', handleScroll, { passive: true, capture: true })
+
 // Add this at the end to test if the script is running
 document.addEventListener('DOMContentLoaded', () => {
   // console.log('🚀 DOM loaded, content script is active!')
@@ -819,4 +859,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Remove after 3 seconds
   setTimeout(() => testDiv.remove(), 3000)
 })
+
+
 

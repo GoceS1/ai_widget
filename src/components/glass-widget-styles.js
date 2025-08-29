@@ -13,6 +13,12 @@ export const GLASS_WIDGET_STYLES = {
       0 8px 24px rgba(0, 0, 0, 0.1),
       inset 0 2px 0 rgba(255, 255, 255, 0.5),
       inset 0 -2px 0 rgba(0, 0, 0, 0.15)
+    `,
+    hoverBoxShadow: `
+      0 0 20px rgba(120, 119, 198, 0.8),
+      0 0 30px rgba(120, 119, 198, 0.6),
+      inset 0 2px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.15)
     `
   },
   
